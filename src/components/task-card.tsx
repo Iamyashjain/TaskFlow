@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Task } from "@/types";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Circle, AlertTriangle, CalendarIcon, User, Send, Loader2, Eye, FileUp, ThumbsUp, Lightbulb } from "lucide-react";
+import { CheckCircle2, Circle, AlertTriangle, CalendarIcon, User, Send, Loader2, Eye, FileUp, ThumbsUp, Lightbulb, Star } from "lucide-react";
 import { format, parseISO } from 'date-fns';
 import {
   Dialog,
@@ -22,6 +22,7 @@ import { reviewPoster } from "@/ai/flows/review-poster-flow";
 import { useTasks } from "@/context/task-context";
 import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
+import { Progress } from "./ui/progress";
 
 interface TaskCardProps {
   task: Task;
@@ -132,6 +133,7 @@ export function TaskCard({ task }: TaskCardProps) {
                 reviewFeedback: {
                   positive: result.positivePoints,
                   negative: result.negativePoints,
+                  rating: result.rating,
                 },
             });
 
@@ -219,6 +221,23 @@ export function TaskCard({ task }: TaskCardProps) {
             {task.reviewFeedback && (
               <div className="mt-4 space-y-4 rounded-lg border bg-muted/50 p-4">
                   <h4 className="font-semibold text-lg">AI Review Feedback</h4>
+                  
+                  {task.reviewFeedback.rating !== undefined && (
+                      <div>
+                          <div className="flex items-center gap-2 text-primary">
+                              <Star className="h-5 w-5" />
+                              <h5 className="font-semibold">Overall Rating</h5>
+                          </div>
+                          <div className="mt-2 pl-7 flex items-center gap-4">
+                                <Progress value={task.reviewFeedback.rating * 10} className="w-1/2" />
+                                <span className="font-bold text-lg">{task.reviewFeedback.rating}/10</span>
+                          </div>
+                           <p className="mt-1 pl-7 text-sm text-muted-foreground">
+                            { task.reviewFeedback.rating >= 8 ? "This poster is looking great and is good to go!" : "This poster needs some improvements before it's ready." }
+                          </p>
+                      </div>
+                  )}
+
                   <div>
                       <div className="flex items-center gap-2 text-green-600 dark:text-green-500">
                           <ThumbsUp className="h-5 w-5" />

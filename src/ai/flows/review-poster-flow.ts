@@ -21,6 +21,13 @@ const ReviewPosterInputSchema = z.object({
 export type ReviewPosterInput = z.infer<typeof ReviewPosterInputSchema>;
 
 const ReviewPosterOutputSchema = z.object({
+  rating: z
+    .number()
+    .min(1)
+    .max(10)
+    .describe(
+      'A numerical rating of the poster from 1 to 10, where 1 is poor and 10 is outstanding.'
+    ),
   positivePoints: z
     .string()
     .describe(
@@ -34,7 +41,7 @@ const ReviewPosterOutputSchema = z.object({
   decision: z
     .enum(['complete', 'pending'])
     .describe(
-      "The final decision. Set to 'complete' if the poster is excellent and needs no critical changes. Set to 'pending' if there are significant issues to address."
+      "The final decision. Set to 'complete' if the poster is excellent (rating >= 8) and needs no critical changes. Set to 'pending' if there are significant issues to address (rating < 8)."
     ),
   revisedDescription: z
     .string()
@@ -62,11 +69,11 @@ const prompt = ai.definePrompt({
 
 **Your Instructions:**
 1.  **Holistic Analysis:** Analyze the poster image in the context of the provided task title and description. Evaluate its design (layout, color, typography), content (clarity, grammar, spelling), and overall alignment with the task's goal.
-2.  **Rate the Poster:** On a scale of 1-10, where 1 is very poor and 10 is outstanding, mentally rate the poster. You will use this rating to make your final decision.
+2.  **Rate the Poster:** Based on your analysis, provide a numerical **rating** for the poster on a scale of 1-10, where 1 is very poor and 10 is outstanding. This rating is a mandatory part of your output.
 3.  **Provide Structured Feedback:**
     - **Positive Points:** Write a bulleted list of exactly three specific things that are well-done in the poster.
     - **Negative Points:** Write a bulleted list of actionable suggestions for improvement. Focus on critical issues like spelling errors, misleading information, or poor design choices. If the poster is perfect, state "No issues found.".
-4.  **Make a Decision:**
+4.  **Make a Decision:** Use your rating to make a final decision.
     - If the poster's rating is 8 or higher and it has no critical errors (like spelling mistakes or incorrect information), set the \`decision\` field to **'complete'**.
     - Otherwise, set the \`decision\` field to **'pending'**.
 5.  **Revise Description:** If necessary, provide a revised task description that incorporates the feedback. If no changes are needed, return the original description.

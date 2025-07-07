@@ -9,5 +9,6 @@ export interface Task {
   reviewFeedback?: {
     positive: string;
     negative: string;
+    rating?: number;
   };
 }
