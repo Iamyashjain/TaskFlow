@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Task } from "@/types";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Circle, AlertTriangle, CalendarIcon, User, Send, Loader2, Eye, FileUp } from "lucide-react";
+import { CheckCircle2, Circle, AlertTriangle, CalendarIcon, User, Send, Loader2, Eye, FileUp, ThumbsUp, Lightbulb } from "lucide-react";
 import { format, parseISO } from 'date-fns';
 import {
   Dialog,
@@ -21,7 +21,6 @@ import { sendReminder } from "@/ai/flows/send-reminder-flow";
 import { reviewPoster } from "@/ai/flows/review-poster-flow";
 import { useTasks } from "@/context/task-context";
 import { Input } from "./ui/input";
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 interface TaskCardProps {
   task: Task;
@@ -127,14 +126,19 @@ export function TaskCard({ task }: TaskCardProps) {
             
             // Update task with AI feedback
             updateTask(task.id, {
-                status: 'pending',
+                status: result.decision === 'complete' ? 'completed' : 'pending',
                 description: result.revisedDescription,
-                corrections: result.corrections,
+                reviewFeedback: {
+                  positive: result.positivePoints,
+                  negative: result.negativePoints,
+                },
             });
 
             toast({
                 title: "Review Complete",
-                description: `Poster for "${task.title}" has been reviewed and task updated.`,
+                description: result.decision === 'complete' 
+                    ? `Task "${task.title}" has been reviewed and marked as complete.`
+                    : `Task "${task.title}" has been reviewed and requires changes.`,
             });
 
         } catch (error) {
@@ -210,13 +214,24 @@ export function TaskCard({ task }: TaskCardProps) {
             </div>
           )}
 
-          {task.corrections && (
-             <Alert className="mt-4">
-                <AlertTitle>AI Review Feedback</AlertTitle>
-                <AlertDescription>
-                    <pre className="whitespace-pre-wrap font-sans">{task.corrections}</pre>
-                </AlertDescription>
-            </Alert>
+          {task.reviewFeedback && (
+            <div className="mt-4 space-y-4 rounded-lg border bg-muted/50 p-4">
+                <h4 className="font-semibold text-lg">AI Review Feedback</h4>
+                <div>
+                    <div className="flex items-center gap-2 text-green-600 dark:text-green-500">
+                        <ThumbsUp className="h-5 w-5" />
+                        <h5 className="font-semibold">What went well</h5>
+                    </div>
+                    <pre className="mt-2 whitespace-pre-wrap font-sans text-sm text-muted-foreground pl-7">{task.reviewFeedback.positive}</pre>
+                </div>
+                <div>
+                    <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-500">
+                        <Lightbulb className="h-5 w-5" />
+                        <h5 className="font-semibold">What to improve</h5>
+                    </div>
+                    <pre className="mt-2 whitespace-pre-wrap font-sans text-sm text-muted-foreground pl-7">{task.reviewFeedback.negative}</pre>
+                </div>
+            </div>
           )}
 
           <div className="flex flex-col gap-2 text-sm pt-4 border-t">
@@ -240,7 +255,7 @@ export function TaskCard({ task }: TaskCardProps) {
                     <h4 className="font-semibold text-sm mb-2">{task.posterUrl ? "Submit a New Poster" : "Submit Poster for Review"}</h4>
                     <div className="flex items-center gap-2">
                         <Input type="file" accept="image/*" onChange={handleFileChange} className="flex-grow" />
-                        <Button onClick={handlePosterReview} disabled={isReviewing}>
+                        <Button onClick={handlePosterReview} disabled={isReviewing || !selectedFile}>
                             {isReviewing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileUp className="mr-2 h-4 w-4" />}
                             {isReviewing ? "Uploading..." : task.posterUrl ? "Resubmit" : "Upload"}
                         </Button>

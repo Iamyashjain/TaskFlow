@@ -57,7 +57,7 @@ const initialTasks: Task[] = [
 interface TaskContextType {
   tasks: Task[];
   addTask: (task: Omit<Task, 'id' | 'status'> & { status: 'pending' | 'completed' | 'overdue' }) => void;
-  updateTask: (taskId: string, updates: Partial<Task>) => void;
+  updateTask: (taskId: string, updates: Partial<Omit<Task, 'reviewFeedback' | 'status'> & { status?: Task['status'], reviewFeedback?: Task['reviewFeedback'] }>) => void;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);

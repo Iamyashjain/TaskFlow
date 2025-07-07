@@ -6,5 +6,8 @@ export interface Task {
   dueDate: string;
   assignee?: string;
   posterUrl?: string;
-  corrections?: string;
+  reviewFeedback?: {
+    positive: string;
+    negative: string;
+  };
 }

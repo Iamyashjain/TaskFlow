@@ -21,10 +21,20 @@ const ReviewPosterInputSchema = z.object({
 export type ReviewPosterInput = z.infer<typeof ReviewPosterInputSchema>;
 
 const ReviewPosterOutputSchema = z.object({
-  corrections: z
+  positivePoints: z
     .string()
     .describe(
-      "A concise, bulleted list of suggested corrections for the poster. If the poster looks good, this should be 'No corrections needed.'."
+      'A concise, bulleted list of exactly 3 positive points about the poster.'
+    ),
+  negativePoints: z
+    .string()
+    .describe(
+      "A concise, bulleted list of suggested corrections or areas for improvement. If none, state 'No issues found.'."
+    ),
+  decision: z
+    .enum(['complete', 'pending'])
+    .describe(
+      "The final decision. Set to 'complete' if the poster is excellent and needs no critical changes. Set to 'pending' if there are significant issues to address."
     ),
   revisedDescription: z
     .string()
@@ -44,17 +54,24 @@ const prompt = ai.definePrompt({
   name: 'reviewPosterPrompt',
   input: {schema: ReviewPosterInputSchema},
   output: {schema: ReviewPosterOutputSchema},
-  prompt: `You are a helpful AI assistant specializing in reviewing marketing materials for accuracy and quality. The user has uploaded a poster for a task.
+  prompt: `You are a Senior Creative Director, an AI assistant specializing in reviewing marketing materials for design, clarity, and effectiveness. The user has uploaded a poster for a task.
 
 **Task Details:**
 - **Title:** "{{taskTitle}}"
 - **Description:** "{{taskDescription}}"
 
 **Your Instructions:**
-1.  **Analyze the poster image against the task details.** Check if the poster's content (text, imagery, theme) aligns with the provided title and description.
-2.  **Identify issues.** Look for spelling mistakes, grammatical errors, incorrect information, placeholder text, or any visual elements (like layout or image choice) that are inconsistent with the task's goal.
-3.  **Provide corrections.** Create a concise, bulleted list of suggested corrections. If the poster is perfect, respond with "No corrections needed.".
-4.  **Revise the description.** Based on your analysis, provide a revised and improved task description. If no changes are needed, return the original task description.
+1.  **Holistic Analysis:** Analyze the poster image in the context of the provided task title and description. Evaluate its design (layout, color, typography), content (clarity, grammar, spelling), and overall alignment with the task's goal.
+2.  **Rate the Poster:** On a scale of 1-10, where 1 is very poor and 10 is outstanding, mentally rate the poster. You will use this rating to make your final decision.
+3.  **Provide Structured Feedback:**
+    - **Positive Points:** Write a bulleted list of exactly three specific things that are well-done in the poster.
+    - **Negative Points:** Write a bulleted list of actionable suggestions for improvement. Focus on critical issues like spelling errors, misleading information, or poor design choices. If the poster is perfect, state "No issues found.".
+4.  **Make a Decision:**
+    - If the poster's rating is 8 or higher and it has no critical errors (like spelling mistakes or incorrect information), set the \`decision\` field to **'complete'**.
+    - Otherwise, set the \`decision\` field to **'pending'**.
+5.  **Revise Description:** If necessary, provide a revised task description that incorporates the feedback. If no changes are needed, return the original description.
+
+Your entire output MUST be in the format of the requested JSON schema.
 
 Poster Image: {{media url=posterDataUri}}`,
 });
