@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, type Auth } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -10,15 +10,34 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-export const auth = getAuth(app);
+let auth: Auth | null = null;
+
+// Only initialize Firebase if the config is valid
+if (firebaseConfig.apiKey && firebaseConfig.projectId) {
+    try {
+        const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+        auth = getAuth(app);
+    } catch (e) {
+        console.error('Firebase initialization error', e);
+    }
+} else {
+    console.warn("Firebase configuration is incomplete. Firebase features will be disabled.");
+}
 
 const provider = new GoogleAuthProvider();
 
 export const signInWithGoogle = () => {
+  if (!auth) {
+    return Promise.reject(new Error("Firebase is not configured. Please check your environment variables."));
+  }
   return signInWithPopup(auth, provider);
 };
 
 export const signOut = () => {
+    if (!auth) {
+        return Promise.reject(new Error("Firebase is not configured."));
+    }
     return firebaseSignOut(auth);
 };
+
+export { auth };
