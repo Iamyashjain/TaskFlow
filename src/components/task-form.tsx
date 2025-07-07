@@ -40,6 +40,7 @@ const formSchema = z.object({
     message: "Title must be at least 2 characters.",
   }),
   description: z.string().optional(),
+  assignee: z.string().optional(),
   dueDate: z.date({
     required_error: "A due date is required.",
   }),
@@ -54,6 +55,7 @@ export function TaskForm() {
     defaultValues: {
       title: "",
       description: "",
+      assignee: "",
       status: "pending",
     },
   })
@@ -104,6 +106,23 @@ export function TaskForm() {
                     <FormMessage />
                     </FormItem>
                 )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="assignee"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Assignee</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. jane.doe@example.com" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Assign this task to someone by name or email.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

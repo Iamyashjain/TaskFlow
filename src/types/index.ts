@@ -4,4 +4,5 @@ export interface Task {
   description: string;
   status: 'pending' | 'completed' | 'overdue';
   dueDate: string;
+  assignee?: string;
 }

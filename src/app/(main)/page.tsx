@@ -10,6 +10,7 @@ const mockTasks: Task[] = [
     description: "Create a modern and responsive design for the new landing page using Figma.",
     status: "pending",
     dueDate: "2024-09-15T00:00:00.000Z",
+    assignee: "alice@example.com",
   },
   {
     id: "2",
@@ -17,6 +18,7 @@ const mockTasks: Task[] = [
     description: "Set up Firebase Google Sign-In and create protected routes for the application.",
     status: "pending",
     dueDate: "2024-09-20T00:00:00.000Z",
+    assignee: "bob@example.com",
   },
   {
     id: "3",
@@ -24,6 +26,7 @@ const mockTasks: Task[] = [
     description: "A bug is preventing users from logging out correctly on mobile devices.",
     status: "overdue",
     dueDate: "2024-08-30T00:00:00.000Z",
+    assignee: "Charlie",
   },
   {
     id: "4",
@@ -38,6 +41,7 @@ const mockTasks: Task[] = [
     description: "Document all public API endpoints for third-party developers.",
     status: "pending",
     dueDate: "2024-09-30T00:00:00.000Z",
+    assignee: "alice@example.com",
   },
    {
     id: "6",

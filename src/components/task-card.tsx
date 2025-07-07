@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Task } from "@/types";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Circle, AlertTriangle, CalendarIcon } from "lucide-react";
+import { CheckCircle2, Circle, AlertTriangle, CalendarIcon, User } from "lucide-react";
 import { format, parseISO } from 'date-fns';
 
 interface TaskCardProps {
@@ -47,9 +47,17 @@ export function TaskCard({ task }: TaskCardProps) {
         <CardDescription className="line-clamp-2">{task.description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center text-sm text-muted-foreground">
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          <span>Due: {format(parseISO(task.dueDate), "PPP")}</span>
+        <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center">
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              <span>Due: {format(parseISO(task.dueDate), "PPP")}</span>
+            </div>
+            {task.assignee && (
+              <div className="flex items-center">
+                <User className="mr-2 h-4 w-4" />
+                <span>{task.assignee}</span>
+              </div>
+            )}
         </div>
       </CardContent>
     </Card>
