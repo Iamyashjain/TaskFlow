@@ -21,6 +21,7 @@ import { sendReminder } from "@/ai/flows/send-reminder-flow";
 import { reviewPoster } from "@/ai/flows/review-poster-flow";
 import { useTasks } from "@/context/task-context";
 import { Input } from "./ui/input";
+import { ScrollArea } from "./ui/scroll-area";
 
 interface TaskCardProps {
   task: Task;
@@ -202,53 +203,55 @@ export function TaskCard({ task }: TaskCardProps) {
               </Badge>
           </div>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <p className="text-muted-foreground">{task.description}</p>
-          
-          {task.posterUrl && (
-            <div className="mt-4">
-                <h4 className="font-semibold mb-2">Submitted Poster:</h4>
-                <div className="relative aspect-video w-full rounded-lg overflow-hidden border">
-                    <Image src={task.posterUrl} alt={`Poster for ${task.title}`} layout="fill" objectFit="contain" />
-                </div>
-            </div>
-          )}
-
-          {task.reviewFeedback && (
-            <div className="mt-4 space-y-4 rounded-lg border bg-muted/50 p-4">
-                <h4 className="font-semibold text-lg">AI Review Feedback</h4>
-                <div>
-                    <div className="flex items-center gap-2 text-green-600 dark:text-green-500">
-                        <ThumbsUp className="h-5 w-5" />
-                        <h5 className="font-semibold">What went well</h5>
-                    </div>
-                    <pre className="mt-2 whitespace-pre-wrap font-sans text-sm text-muted-foreground pl-7">{task.reviewFeedback.positive}</pre>
-                </div>
-                <div>
-                    <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-500">
-                        <Lightbulb className="h-5 w-5" />
-                        <h5 className="font-semibold">What to improve</h5>
-                    </div>
-                    <pre className="mt-2 whitespace-pre-wrap font-sans text-sm text-muted-foreground pl-7">{task.reviewFeedback.negative}</pre>
-                </div>
-            </div>
-          )}
-
-          <div className="flex flex-col gap-2 text-sm pt-4 border-t">
-              <div className="flex items-center text-muted-foreground">
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                <span className="font-medium">Due Date:</span>&nbsp;
-                <span>{format(parseISO(task.dueDate), "PPP")}</span>
+        <ScrollArea className="max-h-[60vh] -mx-6 px-6">
+          <div className="space-y-4 py-4">
+            <p className="text-muted-foreground">{task.description}</p>
+            
+            {task.posterUrl && (
+              <div className="mt-4">
+                  <h4 className="font-semibold mb-2">Submitted Poster:</h4>
+                  <div className="relative aspect-video w-full rounded-lg overflow-hidden border">
+                      <Image src={task.posterUrl} alt={`Poster for ${task.title}`} layout="fill" objectFit="contain" />
+                  </div>
               </div>
-              {task.assignee && (
+            )}
+
+            {task.reviewFeedback && (
+              <div className="mt-4 space-y-4 rounded-lg border bg-muted/50 p-4">
+                  <h4 className="font-semibold text-lg">AI Review Feedback</h4>
+                  <div>
+                      <div className="flex items-center gap-2 text-green-600 dark:text-green-500">
+                          <ThumbsUp className="h-5 w-5" />
+                          <h5 className="font-semibold">What went well</h5>
+                      </div>
+                      <pre className="mt-2 whitespace-pre-wrap font-sans text-sm text-muted-foreground pl-7">{task.reviewFeedback.positive}</pre>
+                  </div>
+                  <div>
+                      <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-500">
+                          <Lightbulb className="h-5 w-5" />
+                          <h5 className="font-semibold">What to improve</h5>
+                      </div>
+                      <pre className="mt-2 whitespace-pre-wrap font-sans text-sm text-muted-foreground pl-7">{task.reviewFeedback.negative}</pre>
+                  </div>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2 text-sm pt-4 border-t">
                 <div className="flex items-center text-muted-foreground">
-                  <User className="mr-2 h-4 w-4" />
-                  <span className="font-medium">Assigned to:</span>&nbsp;
-                  <span>{task.assignee}</span>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <span className="font-medium">Due Date:</span>&nbsp;
+                  <span>{format(parseISO(task.dueDate), "PPP")}</span>
                 </div>
-              )}
+                {task.assignee && (
+                  <div className="flex items-center text-muted-foreground">
+                    <User className="mr-2 h-4 w-4" />
+                    <span className="font-medium">Assigned to:</span>&nbsp;
+                    <span>{task.assignee}</span>
+                  </div>
+                )}
+            </div>
           </div>
-        </div>
+        </ScrollArea>
         <div className="pt-4 mt-4 border-t flex flex-col gap-4">
             {(task.status === 'pending' || task.status === 'overdue') && (
                 <div>
