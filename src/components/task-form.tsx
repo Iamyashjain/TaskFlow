@@ -4,7 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, Loader2 } from "lucide-react"
+import { useState } from "react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -34,13 +35,14 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
+import { sendReminder } from "@/ai/flows/send-reminder-flow"
 
 const formSchema = z.object({
   title: z.string().min(2, {
     message: "Title must be at least 2 characters.",
   }),
   description: z.string().optional(),
-  assignee: z.string().optional(),
+  assignee: z.string().email({ message: "Please enter a valid email." }).optional().or(z.literal('')),
   dueDate: z.date({
     required_error: "A due date is required.",
   }),
@@ -49,6 +51,7 @@ const formSchema = z.object({
 
 export function TaskForm() {
     const { toast } = useToast()
+    const [isSubmitting, setIsSubmitting] = useState(false);
   
     const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -60,13 +63,46 @@ export function TaskForm() {
     },
   })
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values)
-    toast({
-      title: "Task Created",
-      description: "Your new task has been successfully created.",
-    })
-    form.reset()
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSubmitting(true);
+    try {
+      // In a real app, you would save the task to a database.
+      // We are just simulating that and then sending a reminder.
+      console.log("Task created:", values);
+
+      if (values.assignee) {
+        const result = await sendReminder({
+          title: values.title,
+          description: values.description,
+          dueDate: values.dueDate.toISOString(),
+          assignee: values.assignee,
+          reminderType: 'assignment',
+        });
+        if (result.success) {
+          toast({
+            title: "Task Created & Assignee Notified",
+            description: `An assignment notification for "${values.title}" was sent to ${values.assignee}.`,
+          });
+        } else {
+          throw new Error(result.message);
+        }
+      } else {
+        toast({
+          title: "Task Created",
+          description: "Your new task has been successfully created.",
+        });
+      }
+      form.reset();
+    } catch (error) {
+      console.error("Failed to create task or send reminder:", error);
+      toast({
+        variant: "destructive",
+        title: "Something went wrong",
+        description: "Failed to create task or notify assignee. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -113,12 +149,12 @@ export function TaskForm() {
                   name="assignee"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Assignee</FormLabel>
+                      <FormLabel>Assignee Email (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. jane.doe@example.com" {...field} />
+                        <Input type="email" placeholder="e.g. jane.doe@example.com" {...field} />
                       </FormControl>
                       <FormDescription>
-                        Assign this task to someone by name or email.
+                        Assign this task to someone to send them an email notification.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -192,7 +228,10 @@ export function TaskForm() {
                     />
                 </div>
 
-                <Button type="submit" className="transition-transform duration-200 hover:scale-105">Create Task</Button>
+                <Button type="submit" disabled={isSubmitting} className="transition-transform duration-200 hover:scale-105">
+                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isSubmitting ? 'Creating...' : 'Create Task'}
+                </Button>
             </form>
             </Form>
         </CardContent>

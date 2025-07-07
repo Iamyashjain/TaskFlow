@@ -1,8 +1,11 @@
+"use client";
+
+import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Task } from "@/types";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Circle, AlertTriangle, CalendarIcon, User } from "lucide-react";
+import { CheckCircle2, Circle, AlertTriangle, CalendarIcon, User, Send, Loader2 } from "lucide-react";
 import { format, parseISO } from 'date-fns';
 import {
   Dialog,
@@ -11,6 +14,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Button } from "./ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { sendReminder } from "@/ai/flows/send-reminder-flow";
 
 interface TaskCardProps {
   task: Task;
@@ -40,6 +46,42 @@ const statusConfig = {
 export function TaskCard({ task }: TaskCardProps) {
   const config = statusConfig[task.status];
   const Icon = config.icon;
+  const { toast } = useToast();
+  const [isSendingReminder, setIsSendingReminder] = React.useState(false);
+
+  const handleSendReminder = async () => {
+    if (!task.assignee) return;
+
+    setIsSendingReminder(true);
+    try {
+        const result = await sendReminder({
+            title: task.title,
+            description: task.description,
+            dueDate: task.dueDate,
+            assignee: task.assignee,
+            reminderType: 'pending',
+        });
+
+        if (result.success) {
+            toast({
+                title: "Reminder Sent",
+                description: result.message,
+            });
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        console.error("Failed to send reminder:", error);
+        toast({
+            variant: "destructive",
+            title: "Failed to send reminder",
+            description: "Could not send the reminder. Please try again.",
+        });
+    } finally {
+        setIsSendingReminder(false);
+    }
+  };
+
 
   return (
     <Dialog>
@@ -98,6 +140,18 @@ export function TaskCard({ task }: TaskCardProps) {
               )}
           </div>
         </div>
+        {(task.status === 'pending' || task.status === 'overdue') && task.assignee && (
+            <div className="pt-4 mt-4 border-t flex justify-end">
+                 <Button onClick={handleSendReminder} disabled={isSendingReminder}>
+                    {isSendingReminder ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <Send className="mr-2 h-4 w-4" />
+                    )}
+                    {isSendingReminder ? "Sending..." : "Send Reminder to Assignee"}
+                </Button>
+            </div>
+        )}
       </DialogContent>
     </Dialog>
   );
