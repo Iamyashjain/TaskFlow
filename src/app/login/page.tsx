@@ -1,13 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/hooks/use-auth";
-import { signInWithGoogle } from "@/lib/firebase";
-import { Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -37,42 +31,6 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 export default function LoginPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-  const { toast } = useToast();
-
-  useEffect(() => {
-    if (!loading && user) {
-      router.push("/");
-    }
-  }, [user, loading, router]);
-
-  const handleSignIn = async () => {
-    try {
-      await signInWithGoogle();
-      toast({
-        title: "Success",
-        description: "You've successfully signed in.",
-      });
-      router.push("/");
-    } catch (error) {
-      console.error("Error signing in with Google", error);
-      toast({
-        variant: "destructive",
-        title: "Uh oh! Something went wrong.",
-        description: error instanceof Error ? error.message : "There was a problem with your sign-in request.",
-      });
-    }
-  };
-
-  if (loading || user) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm shadow-2xl rounded-2xl">
@@ -81,10 +39,10 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center space-y-6">
-            <p className="text-muted-foreground">Welcome! Please sign in to continue.</p>
+            <p className="text-muted-foreground">Authentication is temporarily disabled.</p>
             <Button
-              onClick={handleSignIn}
-              className="w-full transform transition-transform duration-200 hover:scale-105"
+              disabled
+              className="w-full"
             >
               <GoogleIcon className="mr-2" />
               Sign in with Google
