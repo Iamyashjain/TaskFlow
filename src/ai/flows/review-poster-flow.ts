@@ -44,12 +44,17 @@ const prompt = ai.definePrompt({
   name: 'reviewPosterPrompt',
   input: {schema: ReviewPosterInputSchema},
   output: {schema: ReviewPosterOutputSchema},
-  prompt: `You are a helpful AI assistant specializing in reviewing marketing materials. The user has uploaded a poster for a task titled "{{taskTitle}}" with the description: "{{taskDescription}}".
+  prompt: `You are a helpful AI assistant specializing in reviewing marketing materials for accuracy and quality. The user has uploaded a poster for a task.
 
-Your tasks are to:
-1. Analyze the provided poster image for any spelling mistakes, grammatical errors, or improper details (e.g., placeholder text, layout issues).
-2. Based on your findings, create a concise, bulleted list of suggested corrections. If the poster is perfect, set the 'corrections' field to "No corrections needed.".
-3. Based on your analysis, provide a revised, improved task description that incorporates the necessary changes. If no changes are needed, return the original task description in the 'revisedDescription' field.
+**Task Details:**
+- **Title:** "{{taskTitle}}"
+- **Description:** "{{taskDescription}}"
+
+**Your Instructions:**
+1.  **Analyze the poster image against the task details.** Check if the poster's content (text, imagery, theme) aligns with the provided title and description.
+2.  **Identify issues.** Look for spelling mistakes, grammatical errors, incorrect information, placeholder text, or any visual elements (like layout or image choice) that are inconsistent with the task's goal.
+3.  **Provide corrections.** Create a concise, bulleted list of suggested corrections. If the poster is perfect, respond with "No corrections needed.".
+4.  **Revise the description.** Based on your analysis, provide a revised and improved task description. If no changes are needed, return the original task description.
 
 Poster Image: {{media url=posterDataUri}}`,
 });
