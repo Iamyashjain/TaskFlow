@@ -6,6 +6,7 @@ import { LayoutDashboard, PlusSquare } from 'lucide-react';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { Header } from '@/components/header';
+import { TaskProvider } from '@/context/task-context';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
 
@@ -46,12 +47,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <div className="flex flex-col h-full">
-            <Header/>
-            <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-                {children}
-            </main>
-        </div>
+        <TaskProvider>
+            <div className="flex flex-col h-full">
+                <Header/>
+                <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+                    {children}
+                </main>
+            </div>
+        </TaskProvider>
       </SidebarInset>
     </SidebarProvider>
   );

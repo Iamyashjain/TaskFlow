@@ -6,6 +6,7 @@ import * as z from "zod"
 import { format } from "date-fns"
 import { CalendarIcon, Loader2 } from "lucide-react"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -36,6 +37,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { sendReminder } from "@/ai/flows/send-reminder-flow"
+import { useTasks } from "@/context/task-context"
 
 const formSchema = z.object({
   title: z.string().min(2, {
@@ -51,6 +53,8 @@ const formSchema = z.object({
 
 export function TaskForm() {
     const { toast } = useToast()
+    const router = useRouter();
+    const { addTask } = useTasks();
     const [isSubmitting, setIsSubmitting] = useState(false);
   
     const form = useForm<z.infer<typeof formSchema>>({
@@ -66,9 +70,13 @@ export function TaskForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
-      // In a real app, you would save the task to a database.
-      // We are just simulating that and then sending a reminder.
-      console.log("Task created:", values);
+      const taskData = {
+        ...values,
+        dueDate: values.dueDate.toISOString(),
+        description: values.description || "",
+      };
+      
+      addTask(taskData);
 
       if (values.assignee) {
         const result = await sendReminder({
@@ -93,6 +101,7 @@ export function TaskForm() {
         });
       }
       form.reset();
+      router.push('/');
     } catch (error) {
       console.error("Failed to create task or send reminder:", error);
       toast({
@@ -230,7 +239,7 @@ export function TaskForm() {
 
                 <Button type="submit" disabled={isSubmitting} className="transition-transform duration-200 hover:scale-105">
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isSubmitting ? 'Creating...' : 'Create Task'}
+                  {isSubmitting ? 'Creating...' : 'Create Task & Go to Dashboard'}
                 </Button>
             </form>
             </Form>

@@ -1,11 +1,12 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Task } from "@/types";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Circle, AlertTriangle, CalendarIcon, User, Send, Loader2 } from "lucide-react";
+import { CheckCircle2, Circle, AlertTriangle, CalendarIcon, User, Send, Loader2, Eye, FileUp } from "lucide-react";
 import { format, parseISO } from 'date-fns';
 import {
   Dialog,
@@ -17,6 +18,10 @@ import {
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { sendReminder } from "@/ai/flows/send-reminder-flow";
+import { reviewPoster } from "@/ai/flows/review-poster-flow";
+import { useTasks } from "@/context/task-context";
+import { Input } from "./ui/input";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 interface TaskCardProps {
   task: Task;
@@ -41,13 +46,23 @@ const statusConfig = {
     color: "border-red-500",
     badgeVariant: "destructive" as const,
   },
+  review: {
+    label: "In Review",
+    icon: Eye,
+    color: "border-yellow-500",
+    badgeVariant: "outline" as const,
+  }
 };
 
 export function TaskCard({ task }: TaskCardProps) {
   const config = statusConfig[task.status];
   const Icon = config.icon;
   const { toast } = useToast();
+  const { updateTask } = useTasks();
+
   const [isSendingReminder, setIsSendingReminder] = React.useState(false);
+  const [isReviewing, setIsReviewing] = React.useState(false);
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
 
   const handleSendReminder = async () => {
     if (!task.assignee) return;
@@ -82,6 +97,66 @@ export function TaskCard({ task }: TaskCardProps) {
     }
   };
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      setSelectedFile(event.target.files[0]);
+    }
+  };
+
+  const handlePosterReview = async () => {
+    if (!selectedFile) {
+        toast({ variant: "destructive", title: "No file selected", description: "Please select a poster image to upload." });
+        return;
+    }
+    setIsReviewing(true);
+
+    const reader = new FileReader();
+    reader.readAsDataURL(selectedFile);
+    reader.onload = async () => {
+        const posterDataUri = reader.result as string;
+        
+        // Immediately update status to "review"
+        updateTask(task.id, { status: 'review', posterUrl: posterDataUri });
+
+        try {
+            const result = await reviewPoster({
+                posterDataUri,
+                taskTitle: task.title,
+                taskDescription: task.description,
+            });
+            
+            // Update task with AI feedback
+            updateTask(task.id, {
+                status: 'pending',
+                description: result.revisedDescription,
+                corrections: result.corrections,
+            });
+
+            toast({
+                title: "Review Complete",
+                description: `Poster for "${task.title}" has been reviewed and task updated.`,
+            });
+
+        } catch (error) {
+            console.error("Failed to review poster:", error);
+            toast({
+                variant: "destructive",
+                title: "Review Failed",
+                description: "The AI review process failed. Please try again.",
+            });
+            // Revert status if review fails
+            updateTask(task.id, { status: 'pending' });
+        } finally {
+            setIsReviewing(false);
+            setSelectedFile(null);
+        }
+    };
+    reader.onerror = (error) => {
+        console.error("File reading error:", error);
+        toast({ variant: "destructive", title: "File Error", description: "Could not read the selected file." });
+        setIsReviewing(false);
+    };
+  };
 
   return (
     <Dialog>
@@ -113,7 +188,7 @@ export function TaskCard({ task }: TaskCardProps) {
           </CardContent>
         </Card>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <div className="flex items-center space-x-4">
              <DialogTitle className="text-2xl font-headline">{task.title}</DialogTitle>
@@ -125,6 +200,25 @@ export function TaskCard({ task }: TaskCardProps) {
         </DialogHeader>
         <div className="space-y-4 py-4">
           <p className="text-muted-foreground">{task.description}</p>
+          
+          {task.posterUrl && (
+            <div className="mt-4">
+                <h4 className="font-semibold mb-2">Submitted Poster:</h4>
+                <div className="relative aspect-video w-full rounded-lg overflow-hidden border">
+                    <Image src={task.posterUrl} alt={`Poster for ${task.title}`} layout="fill" objectFit="contain" />
+                </div>
+            </div>
+          )}
+
+          {task.corrections && (
+             <Alert className="mt-4">
+                <AlertTitle>AI Review Feedback</AlertTitle>
+                <AlertDescription>
+                    <pre className="whitespace-pre-wrap font-sans">{task.corrections}</pre>
+                </AlertDescription>
+            </Alert>
+          )}
+
           <div className="flex flex-col gap-2 text-sm pt-4 border-t">
               <div className="flex items-center text-muted-foreground">
                 <CalendarIcon className="mr-2 h-4 w-4" />
@@ -140,18 +234,32 @@ export function TaskCard({ task }: TaskCardProps) {
               )}
           </div>
         </div>
-        {(task.status === 'pending' || task.status === 'overdue') && task.assignee && (
-            <div className="pt-4 mt-4 border-t flex justify-end">
-                 <Button onClick={handleSendReminder} disabled={isSendingReminder}>
-                    {isSendingReminder ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <Send className="mr-2 h-4 w-4" />
-                    )}
-                    {isSendingReminder ? "Sending..." : "Send Reminder to Assignee"}
-                </Button>
-            </div>
-        )}
+        <div className="pt-4 mt-4 border-t flex flex-col gap-4">
+            {(task.status === 'pending' || task.status === 'overdue') && (
+                <div>
+                    <h4 className="font-semibold text-sm mb-2">Submit for Review</h4>
+                    <div className="flex items-center gap-2">
+                        <Input type="file" accept="image/*" onChange={handleFileChange} className="flex-grow" />
+                        <Button onClick={handlePosterReview} disabled={isReviewing || !selectedFile}>
+                            {isReviewing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileUp className="mr-2 h-4 w-4" />}
+                            {isReviewing ? "Uploading..." : "Upload"}
+                        </Button>
+                    </div>
+                </div>
+            )}
+            {(task.status === 'pending' || task.status === 'overdue') && task.assignee && (
+                <div className="flex justify-end">
+                    <Button onClick={handleSendReminder} disabled={isSendingReminder}>
+                        {isSendingReminder ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Send className="mr-2 h-4 w-4" />
+                        )}
+                        {isSendingReminder ? "Sending..." : "Send Reminder to Assignee"}
+                    </Button>
+                </div>
+            )}
+        </div>
       </DialogContent>
     </Dialog>
   );
