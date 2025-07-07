@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, type Auth } from "firebase/auth";
+import { getFirestore, type Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -11,12 +12,14 @@ const firebaseConfig = {
 };
 
 let auth: Auth | null = null;
+let db: Firestore | null = null;
 
 // Only initialize Firebase if the config is valid
 if (firebaseConfig.apiKey && firebaseConfig.projectId) {
     try {
         const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
         auth = getAuth(app);
+        db = getFirestore(app);
     } catch (e) {
         console.error('Firebase initialization error', e);
     }
@@ -34,6 +37,7 @@ export const signInWithGoogle = () => {
   return signInWithPopup(auth, provider).catch((error) => {
     if (error.code === 'auth/popup-blocked') {
       console.error('Popup blocked:', 'Please allow popups for this site to sign in with Google.');
+      alert('Sign-in popup blocked by the browser. Please allow popups for this site.');
     }
     throw error; // Re-throw the error so it can be handled further up if needed
   });
@@ -46,4 +50,4 @@ export const signOut = () => {
     return firebaseSignOut(auth);
 };
 
-export { auth };
+export { auth, db };
