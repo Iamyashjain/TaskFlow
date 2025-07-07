@@ -240,7 +240,7 @@ export function TaskCard({ task }: TaskCardProps) {
                     <h4 className="font-semibold text-sm mb-2">{task.posterUrl ? "Submit a New Poster" : "Submit Poster for Review"}</h4>
                     <div className="flex items-center gap-2">
                         <Input type="file" accept="image/*" onChange={handleFileChange} className="flex-grow" />
-                        <Button onClick={handlePosterReview} disabled={isReviewing || !selectedFile}>
+                        <Button onClick={handlePosterReview} disabled={isReviewing}>
                             {isReviewing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileUp className="mr-2 h-4 w-4" />}
                             {isReviewing ? "Uploading..." : task.posterUrl ? "Resubmit" : "Upload"}
                         </Button>
