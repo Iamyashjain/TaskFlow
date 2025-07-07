@@ -30,7 +30,13 @@ export const signInWithGoogle = () => {
   if (!auth) {
     return Promise.reject(new Error("Firebase is not configured. Please check your environment variables."));
   }
-  return signInWithPopup(auth, provider);
+  // Catch and log the popup blocked error specifically
+  return signInWithPopup(auth, provider).catch((error) => {
+    if (error.code === 'auth/popup-blocked') {
+      console.error('Popup blocked:', 'Please allow popups for this site to sign in with Google.');
+    }
+    throw error; // Re-throw the error so it can be handled further up if needed
+  });
 };
 
 export const signOut = () => {
