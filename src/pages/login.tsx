@@ -56,11 +56,24 @@ export default function LoginPage() {
         description: "Welcome back!",
       });
     } catch (error: any) {
-      console.error(error);
+      console.error("Google Sign-In Error:", error);
       let description = "An unexpected error occurred. Please try again.";
-      if (error.code === 'auth/popup-blocked') {
-        description = "Sign-in popup was blocked by your browser. Please allow popups for this site.";
+
+      switch (error.code) {
+        case 'auth/popup-blocked':
+          description = "Sign-in popup was blocked by your browser. Please allow popups for this site.";
+          break;
+        case 'auth/unauthorized-domain':
+          description = "This domain is not authorized for Google Sign-In. Please add it to the authorized domains in your Firebase project's authentication settings.";
+          break;
+        case 'auth/operation-not-allowed':
+          description = "Google Sign-In is not enabled for this project. Please enable it in the Firebase console.";
+          break;
+        case 'auth/cancelled-popup-request':
+          description = "Sign-in was cancelled. Please try again.";
+          break;
       }
+      
       toast({
         variant: "destructive",
         title: "Sign In Failed",
