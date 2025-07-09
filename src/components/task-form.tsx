@@ -1,3 +1,4 @@
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -37,6 +38,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { useTasks } from "@/context/task-context"
+import { TaskType } from "@/types"
 
 const formSchema = z.object({
   title: z.string().min(2, {
@@ -50,6 +52,13 @@ const formSchema = z.object({
   status: z.enum(["pending", "completed", "overdue"]),
   type: z.enum(["Content", "Design", "Administration", "Media"]),
 })
+
+const verticalLeads: Record<TaskType, string> = {
+  Content: "24bcs156@ietdavv.edu.in",
+  Design: "thecraftersietdavv@gmail.com",
+  Administration: "23btc078@ietdavv.edu.in",
+  Media: "yashjain200502@gmail.com",
+};
 
 export function TaskForm() {
     const { toast } = useToast()
@@ -80,17 +89,19 @@ export function TaskForm() {
       addTask(taskData);
 
       if (values.assignee) {
+        const leadEmail = verticalLeads[values.type];
+        
         // AI Flow is mocked for static export compatibility
         await new Promise(resolve => setTimeout(resolve, 1000));
         const result = { success: true };
         
         if (result.success) {
           toast({
-            title: "Task Created & Assignee Notified",
-            description: `An assignment notification for "${values.title}" was sent to ${values.assignee}.`,
+            title: "Task Created & Notifications Sent",
+            description: `Notifications for "${values.title}" sent to assignee (${values.assignee}) and vertical lead (${leadEmail}).`,
           });
         } else {
-          throw new Error("Failed to send reminder");
+          throw new Error("Failed to send notifications");
         }
       } else {
         toast({
@@ -101,11 +112,11 @@ export function TaskForm() {
       form.reset();
       router.push('/');
     } catch (error) {
-      console.error("Failed to create task or send reminder:", error);
+      console.error("Failed to create task or send notifications:", error);
       toast({
         variant: "destructive",
         title: "Something went wrong",
-        description: "Failed to create task or notify assignee. Please try again.",
+        description: "Failed to create task or send notifications. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
