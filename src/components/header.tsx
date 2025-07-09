@@ -1,6 +1,5 @@
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { ThemeToggle } from "./theme-toggle"
-import { UserNav } from "./user-nav"
 
 export function Header() {
   return (
@@ -11,7 +10,6 @@ export function Header() {
       <div className="flex-1" />
       <div className="flex items-center gap-4">
         <ThemeToggle />
-        <UserNav />
       </div>
     </header>
   )

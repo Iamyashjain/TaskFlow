@@ -1,50 +1,13 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { LayoutDashboard, LogOut, PlusSquare, Loader2 } from 'lucide-react';
+import { LayoutDashboard, PlusSquare } from 'lucide-react';
 
-import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
+import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { Header } from '@/components/header';
-import { useAuth } from '@/hooks/use-auth';
-import { signOut } from '@/lib/firebase';
-import { useToast } from '@/hooks/use-toast';
-import { UserNav } from './user-nav';
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
   const router = useRouter();
-  const { toast } = useToast();
-
-  React.useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      router.push("/login");
-      toast({
-        title: "Signed Out",
-        description: "You have been successfully signed out.",
-      });
-    } catch (error) {
-       toast({
-        variant: "destructive",
-        title: "Sign Out Error",
-        description: "Failed to sign out. Please try again.",
-      });
-    }
-  }
-
-  if (loading || !user) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <SidebarProvider>
@@ -75,16 +38,6 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter>
-          <SidebarMenu>
-             <SidebarMenuItem>
-                <SidebarMenuButton onClick={handleSignOut}>
-                  <LogOut/>
-                  Logout
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
       </Sidebar>
       <SidebarInset>
         <div className="flex flex-col h-full">
