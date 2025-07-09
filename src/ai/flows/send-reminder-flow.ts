@@ -1,33 +1,40 @@
 'use server';
-/**
- * @fileOverview A flow for sending task reminders.
- *
- * - sendReminder - A function that simulates sending a task reminder.
- * - SendReminderInput - The input type for the sendReminder function.
- * - SendReminderOutput - The return type for the sendReminder function.
- */
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
 
+/**
+ * Sends a task reminder email for GDG IET DAVV.
+ */
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
+import nodemailer from 'nodemailer';
+ // Ensure .env.local is loaded in dev mode
+
+// 🟩 Input Schema
 const SendReminderInputSchema = z.object({
-  title: z.string().describe('The title of the task.'),
-  description: z.string().optional().describe('The description of the task.'),
-  dueDate: z.string().describe('The due date of the task.'),
-  assignee: z.string().describe('The email or name of the person the task is assigned to.'),
-  reminderType: z.enum(['assignment', 'pending']).describe('The type of reminder to send.'),
+  title: z.string().describe('Task title'),
+  description: z.string().optional().describe('Task details'),
+  dueDate: z.string().describe('Due date (ISO format)'),
+  assignee: z.string().describe('Assignee email'),
+  reminderType: z.enum(['assignment', 'pending']).describe('Reminder type'),
 });
+
 export type SendReminderInput = z.infer<typeof SendReminderInputSchema>;
 
+// 🟥 Output Schema
 const SendReminderOutputSchema = z.object({
   success: z.boolean(),
   message: z.string(),
 });
+
 export type SendReminderOutput = z.infer<typeof SendReminderOutputSchema>;
 
+// 🔁 Exported server function (used in TaskCard)
 export async function sendReminder(input: SendReminderInput): Promise<SendReminderOutput> {
   return sendReminderFlow(input);
 }
 
+// 🔧 The AI Flow logic
 const sendReminderFlow = ai.defineFlow(
   {
     name: 'sendReminderFlow',
@@ -35,29 +42,66 @@ const sendReminderFlow = ai.defineFlow(
     outputSchema: SendReminderOutputSchema,
   },
   async (input) => {
-    // In a real application, this is where you would integrate with an email service.
-    // For this prototype, we'll just simulate the action and log to the console.
-    const subject = input.reminderType === 'assignment'
-        ? `New Task Assigned: ${input.title}`
-        : `Reminder: Task Due Soon - ${input.title}`;
-    
-    console.log('--- SIMULATING EMAIL ---');
-    console.log(`To: ${input.assignee}`);
-    console.log(`Subject: ${subject}`);
-    console.log(`Hi ${input.assignee},`);
-    console.log(`This is a reminder about the task: "${input.title}".`);
-    console.log(`Description: ${input.description || 'No description provided.'}`);
-    console.log(`It is due on: ${new Date(input.dueDate).toLocaleDateString()}.`);
-    console.log('Thank you,');
-    console.log('TaskFlow');
-    console.log('--- END SIMULATION ---');
+    const { title, description, dueDate, assignee, reminderType } = input;
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const subject =
+      reminderType === 'assignment'
+        ? 📌 GDG IET DAVV - New Task Assigned: ${title}
+        : ⏰ GDG IET DAVV - Task Due Soon: ${title};
 
-    return {
-      success: true,
-      message: `Reminder for task "${input.title}" sent to ${input.assignee}.`,
-    };
+    const formattedDate = new Date(dueDate).toLocaleDateString('en-IN', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+
+    const message = `
+Hi ${assignee.split('@')[0]},
+
+You're receiving this from GDG IET DAVV regarding the task:
+
+📝 *Task:* ${title}
+📅 *Due:* ${formattedDate}
+📖 *Details:* ${description || 'No description provided'}
+
+${
+  reminderType === 'assignment'
+    ? You've been assigned a new responsibility. We’re excited to see what you’ll create!
+    : This is a friendly reminder to complete your task on time. Let's keep the momentum going!
+}
+
+Best regards,  
+🌟 Team GDG IET DAVV  
+Connect · Learn · Grow
+    `.trim();
+
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
+
+      await transporter.sendMail({
+        from: "GDG IET DAVV" <${process.env.EMAIL_USER}>,
+        to: assignee,
+        subject,
+        text: message,
+      });
+
+      return {
+        success: true,
+        message: Reminder sent to ${assignee} from GDG IET DAVV.,
+      };
+    } catch (error: any) {
+      console.error('[Reminder Flow Error]', error);
+      return {
+        success: false,
+        message: 'Email sending failed. Check credentials or internet.',
+      };
+    }
   }
 );

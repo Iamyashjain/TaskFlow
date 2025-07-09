@@ -48,6 +48,7 @@ const formSchema = z.object({
     required_error: "A due date is required.",
   }),
   status: z.enum(["pending", "completed", "overdue"]),
+  type: z.enum(["Content", "Design", "Administration", "Media"]),
 })
 
 export function TaskForm() {
@@ -63,6 +64,7 @@ export function TaskForm() {
       description: "",
       assignee: "",
       status: "pending",
+      type: "Content",
     },
   })
 
@@ -161,6 +163,30 @@ export function TaskForm() {
                       <FormDescription>
                         Assign this task to send them an email notification.
                       </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Type</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a task type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Content">Content</SelectItem>
+                          <SelectItem value="Design">Design</SelectItem>
+                          <SelectItem value="Administration">Administration</SelectItem>
+                          <SelectItem value="Media">Media</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

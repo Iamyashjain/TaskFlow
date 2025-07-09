@@ -40,6 +40,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                     description: data.description,
                     status: data.status,
                     dueDate: data.dueDate,
+                    type: data.type || 'Content',
                     assignee: data.assignee,
                     posterUrl: data.posterUrl,
                     reviewFeedback: data.reviewFeedback,

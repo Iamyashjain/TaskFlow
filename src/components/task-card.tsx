@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Task } from "@/types";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Circle, AlertTriangle, CalendarIcon, User, Send, Loader2, Eye, FileUp, ThumbsUp, Lightbulb, Star } from "lucide-react";
+import { CheckCircle2, Circle, AlertTriangle, CalendarIcon, User, Send, Loader2, Eye, FileUp, ThumbsUp, Lightbulb, Star, Tag } from "lucide-react";
 import { format, parseISO } from 'date-fns';
 import {
   Dialog,
@@ -184,6 +184,10 @@ export function TaskCard({ task }: TaskCardProps) {
           <CardContent>
             <div className="flex flex-col gap-2 text-sm text-muted-foreground">
                 <div className="flex items-center">
+                  <Tag className="mr-2 h-4 w-4" />
+                  <span>{task.type}</span>
+                </div>
+                <div className="flex items-center">
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   <span>Due: {format(parseISO(task.dueDate), "PPP")}</span>
                 </div>
@@ -258,6 +262,11 @@ export function TaskCard({ task }: TaskCardProps) {
             )}
 
             <div className="flex flex-col gap-2 text-sm pt-4 border-t">
+                <div className="flex items-center text-muted-foreground">
+                  <Tag className="mr-2 h-4 w-4" />
+                  <span className="font-medium">Type:</span>&nbsp;
+                  <span>{task.type}</span>
+                </div>
                 <div className="flex items-center text-muted-foreground">
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   <span className="font-medium">Due Date:</span>&nbsp;
