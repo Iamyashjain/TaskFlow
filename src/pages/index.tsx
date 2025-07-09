@@ -22,7 +22,7 @@ export default function DashboardPage() {
         <section>
           <div className="flex items-center gap-3 mb-4">
             <Clock className="h-6 w-6 text-primary" />
-            <h3 className="text-2xl font-semibold font-headline">In Progress</h3>
+            <h3 className="text-2xl font-semibold font-headline">Pending Tasks</h3>
           </div>
           {pendingTasks.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -40,7 +40,7 @@ export default function DashboardPage() {
         <section>
           <div className="flex items-center gap-3 mb-4">
             <CheckCircle className="h-6 w-6 text-green-500" />
-            <h3 className="text-2xl font-semibold font-headline">Completed</h3>
+            <h3 className="text-2xl font-semibold font-headline">Completed Tasks</h3>
           </div>
           {completedTasks.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

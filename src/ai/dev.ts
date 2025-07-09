@@ -1,3 +1,3 @@
 // Flows will be imported for their side effects in this file.
 import './flows/send-reminder-flow';
-import './flows/review-poster-flow';
+import './flows/review-submission-flow';

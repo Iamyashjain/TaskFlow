@@ -4,7 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Task } from "@/types";
+import { Task, TaskType } from "@/types";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, Circle, AlertTriangle, CalendarIcon, User, Send, Loader2, Eye, FileUp, ThumbsUp, Lightbulb, Star, Tag } from "lucide-react";
 import { format, parseISO } from 'date-fns';
@@ -53,6 +53,13 @@ const statusConfig = {
   }
 };
 
+const allowedFiles: Record<TaskType, { types: string[], extensions: string[] }> = {
+    Content: { types: ['application/pdf'], extensions: ['.pdf'] },
+    Design: { types: ['image/png', 'image/jpeg'], extensions: ['.png', '.jpg', '.jpeg'] },
+    Media: { types: ['video/mp4', 'video/quicktime'], extensions: ['.mp4', '.mov'] },
+    Administration: { types: ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'], extensions: ['.docx', '.xlsx'] },
+};
+
 export function TaskCard({ task }: TaskCardProps) {
   const config = statusConfig[task.status];
   const Icon = config.icon;
@@ -96,8 +103,24 @@ export function TaskCard({ task }: TaskCardProps) {
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      setSelectedFile(event.target.files[0]);
+    const file = event.target.files?.[0];
+    if (file) {
+        const allowed = allowedFiles[task.type];
+        const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+        
+        if (allowed.types.includes(file.type) || allowed.extensions.includes(fileExtension)) {
+            setSelectedFile(file);
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Invalid File Type",
+                description: `For ${task.type} tasks, only ${allowed.extensions.join(', ')} files are allowed.`,
+            });
+            setSelectedFile(null);
+            if(fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
+        }
     }
   };
 
@@ -107,7 +130,7 @@ export function TaskCard({ task }: TaskCardProps) {
 
   const handlePosterReview = async () => {
     if (!selectedFile) {
-        toast({ variant: "destructive", title: "No file selected", description: "Please select a poster image to upload." });
+        toast({ variant: "destructive", title: "No file selected", description: "Please select a file to upload." });
         return;
     }
     setIsReviewing(true);
@@ -167,6 +190,8 @@ export function TaskCard({ task }: TaskCardProps) {
     };
   };
 
+  const fileInputAccept = allowedFiles[task.type].types.join(',');
+
   return (
     <Dialog onOpenChange={() => setSelectedFile(null)}>
       <DialogTrigger asChild>
@@ -215,13 +240,22 @@ export function TaskCard({ task }: TaskCardProps) {
           <div className="space-y-4 py-4">
             <p className="text-muted-foreground">{task.description}</p>
             
-            {task.posterUrl && (
+            {task.posterUrl && task.type === 'Design' && (
               <div className="mt-4">
                   <h4 className="font-semibold mb-2">Submitted Poster:</h4>
                   <div className="relative aspect-video w-full rounded-lg overflow-hidden border">
                       <Image src={task.posterUrl} alt={`Poster for ${task.title}`} layout="fill" objectFit="contain" />
                   </div>
               </div>
+            )}
+             {task.posterUrl && task.type !== 'Design' && (
+                <div className="mt-4">
+                    <h4 className="font-semibold mb-2">Submitted File:</h4>
+                    <div className="rounded-lg border bg-muted/50 p-4 text-center">
+                      <p>A file has been submitted for this task.</p>
+                      <p className="text-sm text-muted-foreground">File preview is not available for this task type.</p>
+                    </div>
+                </div>
             )}
 
             {task.reviewFeedback && (
@@ -239,7 +273,7 @@ export function TaskCard({ task }: TaskCardProps) {
                                 <span className="font-bold text-lg">{task.reviewFeedback.rating}/10</span>
                           </div>
                            <p className="mt-1 pl-7 text-sm text-muted-foreground">
-                            { task.reviewFeedback.rating >= 8 ? "This poster is looking great and is good to go!" : "This poster needs some improvements before it's ready." }
+                            { task.reviewFeedback.rating >= 8 ? "This submission is looking great!" : "This submission needs some improvements before it's ready." }
                           </p>
                       </div>
                   )}
@@ -285,11 +319,11 @@ export function TaskCard({ task }: TaskCardProps) {
         <div className="pt-4 mt-4 border-t flex flex-col gap-4">
             {(task.status === 'pending' || task.status === 'overdue') && (
                 <div>
-                    <h4 className="font-semibold text-sm mb-2">{task.posterUrl ? "Submit a New Poster" : "Submit Poster for Review"}</h4>
+                    <h4 className="font-semibold text-sm mb-2">{task.posterUrl ? "Submit a New File" : "Submit File for Review"}</h4>
                     <div className="flex items-center gap-2">
                         <Input 
                           type="file" 
-                          accept="image/*" 
+                          accept={fileInputAccept}
                           onChange={handleFileChange} 
                           className="hidden" 
                           ref={fileInputRef}

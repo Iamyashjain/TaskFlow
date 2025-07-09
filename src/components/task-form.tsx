@@ -198,6 +198,9 @@ export function TaskForm() {
                           <SelectItem value="Media">Media</SelectItem>
                         </SelectContent>
                       </Select>
+                      <FormDescription>
+                        Categorize the task by its vertical.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
