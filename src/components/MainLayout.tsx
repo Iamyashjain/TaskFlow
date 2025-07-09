@@ -1,17 +1,50 @@
-"use client"
-
 import React from 'react';
-import { LayoutDashboard, PlusSquare } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+import { LayoutDashboard, LogOut, PlusSquare, Loader2 } from 'lucide-react';
 
 import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
-import Link from 'next/link';
 import { Header } from '@/components/header';
-import { TaskProvider } from '@/context/task-context';
+import { useAuth } from '@/hooks/use-auth';
+import { signOut } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
+import { UserNav } from './user-nav';
 
-export default function MainLayout({ children }: { children: React.ReactNode }) {
+export function MainLayout({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
 
-  // All authentication-related logic has been temporarily removed.
-  // This includes hooks, effects, loading states, and sign-out functionality.
+  React.useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.push("/login");
+      toast({
+        title: "Signed Out",
+        description: "You have been successfully signed out.",
+      });
+    } catch (error) {
+       toast({
+        variant: "destructive",
+        title: "Sign Out Error",
+        description: "Failed to sign out. Please try again.",
+      });
+    }
+  }
+
+  if (loading || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>
@@ -25,7 +58,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild>
+              <SidebarMenuButton asChild isActive={router.pathname === '/'}>
                 <Link href="/">
                   <LayoutDashboard/>
                   Dashboard
@@ -33,7 +66,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild>
+              <SidebarMenuButton asChild isActive={router.pathname === '/create'}>
                 <Link href="/create">
                   <PlusSquare/>
                   Create Task
@@ -43,18 +76,23 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
-            {/* Auth is temporarily disabled. Logout button removed. */}
+          <SidebarMenu>
+             <SidebarMenuItem>
+                <SidebarMenuButton onClick={handleSignOut}>
+                  <LogOut/>
+                  Logout
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <TaskProvider>
-            <div className="flex flex-col h-full">
-                <Header/>
-                <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-                    {children}
-                </main>
-            </div>
-        </TaskProvider>
+        <div className="flex flex-col h-full">
+            <Header />
+            <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+                {children}
+            </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

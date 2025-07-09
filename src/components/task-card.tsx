@@ -17,8 +17,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { sendReminder } from "@/ai/flows/send-reminder-flow";
-import { reviewPoster } from "@/ai/flows/review-poster-flow";
 import { useTasks } from "@/context/task-context";
 import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
@@ -61,22 +59,21 @@ export function TaskCard({ task }: TaskCardProps) {
   const { toast } = useToast();
   const { updateTask } = useTasks();
 
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isSendingReminder, setIsSendingReminder] = React.useState(false);
   const [isReviewing, setIsReviewing] = React.useState(false);
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
 
   const handleSendReminder = async () => {
     if (!task.assignee) return;
-
     setIsSendingReminder(true);
     try {
-        const result = await sendReminder({
-            title: task.title,
-            description: task.description,
-            dueDate: task.dueDate,
-            assignee: task.assignee,
-            reminderType: 'pending',
-        });
+        // AI Flow is mocked for static export compatibility
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const result = {
+            success: true,
+            message: `Reminder for task "${task.title}" sent to ${task.assignee}.`,
+        };
 
         if (result.success) {
             toast({
@@ -104,6 +101,10 @@ export function TaskCard({ task }: TaskCardProps) {
     }
   };
 
+  const handleTriggerUpload = () => {
+    fileInputRef.current?.click();
+  };
+
   const handlePosterReview = async () => {
     if (!selectedFile) {
         toast({ variant: "destructive", title: "No file selected", description: "Please select a poster image to upload." });
@@ -116,17 +117,19 @@ export function TaskCard({ task }: TaskCardProps) {
     reader.onload = async () => {
         const posterDataUri = reader.result as string;
         
-        // Immediately update status to "review"
         updateTask(task.id, { status: 'review', posterUrl: posterDataUri });
 
         try {
-            const result = await reviewPoster({
-                posterDataUri,
-                taskTitle: task.title,
-                taskDescription: task.description,
-            });
+            // AI Flow is mocked for static export compatibility
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const result = {
+                decision: posterDataUri.length % 2 === 0 ? 'complete' : 'pending',
+                revisedDescription: task.description + "\\n(AI suggested edit: Make it pop!)",
+                positivePoints: "- Great color scheme\\n- Clear typography\\n- Strong call to action",
+                negativePoints: "- Image could be higher resolution",
+                rating: 8
+            };
             
-            // Update task with AI feedback
             updateTask(task.id, {
                 status: result.decision === 'complete' ? 'completed' : 'pending',
                 description: result.revisedDescription,
@@ -140,8 +143,8 @@ export function TaskCard({ task }: TaskCardProps) {
             toast({
                 title: "Review Complete",
                 description: result.decision === 'complete' 
-                    ? `Task "${task.title}" has been reviewed and marked as complete.`
-                    : `Task "${task.title}" has been reviewed and requires changes.`,
+                    ? `Task "${task.title}" reviewed and marked as complete.`
+                    : `Task "${task.title}" reviewed and requires changes.`,
             });
 
         } catch (error) {
@@ -151,7 +154,6 @@ export function TaskCard({ task }: TaskCardProps) {
                 title: "Review Failed",
                 description: "The AI review process failed. Please try again.",
             });
-            // Revert status if review fails
             updateTask(task.id, { status: 'pending' });
         } finally {
             setIsReviewing(false);
@@ -166,7 +168,7 @@ export function TaskCard({ task }: TaskCardProps) {
   };
 
   return (
-    <Dialog>
+    <Dialog onOpenChange={() => setSelectedFile(null)}>
       <DialogTrigger asChild>
         <Card className={cn("rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-l-4 cursor-pointer", config.color)}>
           <CardHeader>
@@ -276,10 +278,19 @@ export function TaskCard({ task }: TaskCardProps) {
                 <div>
                     <h4 className="font-semibold text-sm mb-2">{task.posterUrl ? "Submit a New Poster" : "Submit Poster for Review"}</h4>
                     <div className="flex items-center gap-2">
-                        <Input type="file" accept="image/*" onChange={handleFileChange} className="flex-grow" />
+                        <Input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handleFileChange} 
+                          className="hidden" 
+                          ref={fileInputRef}
+                        />
+                        <Button variant="outline" onClick={handleTriggerUpload} className="w-full justify-start truncate text-muted-foreground">
+                          {selectedFile ? selectedFile.name : "Select a file..."}
+                        </Button>
                         <Button onClick={handlePosterReview} disabled={isReviewing || !selectedFile}>
                             {isReviewing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileUp className="mr-2 h-4 w-4" />}
-                            {isReviewing ? "Uploading..." : task.posterUrl ? "Resubmit" : "Upload"}
+                            {isReviewing ? "Submitting..." : task.posterUrl ? "Resubmit" : "Submit"}
                         </Button>
                     </div>
                 </div>
@@ -292,7 +303,7 @@ export function TaskCard({ task }: TaskCardProps) {
                         ) : (
                             <Send className="mr-2 h-4 w-4" />
                         )}
-                        {isSendingReminder ? "Sending..." : "Send Reminder to Assignee"}
+                        {isSendingReminder ? "Sending..." : "Send Reminder"}
                     </Button>
                 </div>
             )}

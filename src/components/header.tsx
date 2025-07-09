@@ -1,6 +1,6 @@
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { ThemeToggle } from "./theme-toggle"
-// import { UserNav } from "./user-nav" // Auth disabled for now
+import { UserNav } from "./user-nav"
 
 export function Header() {
   return (
@@ -8,12 +8,10 @@ export function Header() {
        <div className="md:hidden">
         <SidebarTrigger />
       </div>
-      <div className="flex-1">
-        <h1 className="text-lg font-semibold md:text-xl font-headline">Dashboard</h1>
-      </div>
+      <div className="flex-1" />
       <div className="flex items-center gap-4">
         <ThemeToggle />
-        {/* <UserNav /> */}
+        <UserNav />
       </div>
     </header>
   )
