@@ -2,12 +2,31 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Task } from "@/types";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Circle, AlertTriangle, CalendarIcon, User, Send, Loader2, Eye, FileUp, ThumbsUp, Lightbulb, Star } from "lucide-react";
-import { format, parseISO } from 'date-fns';
+import {
+  CheckCircle2,
+  Circle,
+  AlertTriangle,
+  CalendarIcon,
+  User,
+  Send,
+  Loader2,
+  Eye,
+  FileUp,
+  ThumbsUp,
+  Lightbulb,
+  Star,
+} from "lucide-react";
+import { format, parseISO } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -18,7 +37,8 @@ import {
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { sendReminder } from "@/ai/flows/send-reminder-flow";
-import { reviewPoster } from "@/ai/flows/review-poster-flow";
+import { reviewTaskByType } from "@/app/actions/review-tasks";
+
 import { useTasks } from "@/context/task-context";
 import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
@@ -52,7 +72,7 @@ const statusConfig = {
     icon: Eye,
     color: "border-yellow-500",
     badgeVariant: "outline" as const,
-  }
+  },
 };
 
 export function TaskCard({ task }: TaskCardProps) {
@@ -70,31 +90,31 @@ export function TaskCard({ task }: TaskCardProps) {
 
     setIsSendingReminder(true);
     try {
-        const result = await sendReminder({
-            title: task.title,
-            description: task.description,
-            dueDate: task.dueDate,
-            assignee: task.assignee,
-            reminderType: 'pending',
-        });
+      const result = await sendReminder({
+        title: task.title,
+        description: task.description,
+        dueDate: task.dueDate,
+        assignee: task.assignee,
+        reminderType: "pending",
+      });
 
-        if (result.success) {
-            toast({
-                title: "Reminder Sent",
-                description: result.message,
-            });
-        } else {
-            throw new Error(result.message);
-        }
-    } catch (error) {
-        console.error("Failed to send reminder:", error);
+      if (result.success) {
         toast({
-            variant: "destructive",
-            title: "Failed to send reminder",
-            description: "Could not send the reminder. Please try again.",
+          title: "Reminder Sent",
+          description: result.message,
         });
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (error) {
+      console.error("Failed to send reminder:", error);
+      toast({
+        variant: "destructive",
+        title: "Failed to send reminder",
+        description: "Could not send the reminder. Please try again.",
+      });
     } finally {
-        setIsSendingReminder(false);
+      setIsSendingReminder(false);
     }
   };
 
@@ -106,91 +126,133 @@ export function TaskCard({ task }: TaskCardProps) {
 
   const handlePosterReview = async () => {
     if (!selectedFile) {
-        toast({ variant: "destructive", title: "No file selected", description: "Please select a poster image to upload." });
-        return;
+      toast({
+        variant: "destructive",
+        title: "No input provided",
+        description:
+          task.type === "administration"
+            ? "Please paste the Google Form link."
+            : "Please select a file to upload.",
+      });
+      return;
     }
+
     setIsReviewing(true);
 
-    const reader = new FileReader();
-    reader.readAsDataURL(selectedFile);
-    reader.onload = async () => {
-        const posterDataUri = reader.result as string;
-        
-        // Immediately update status to "review"
-        updateTask(task.id, { status: 'review', posterUrl: posterDataUri });
+    try {
+      let submissionData = "";
 
-        try {
-            const result = await reviewPoster({
-                posterDataUri,
-                taskTitle: task.title,
-                taskDescription: task.description,
-            });
-            
-            // Update task with AI feedback
-            updateTask(task.id, {
-                status: result.decision === 'complete' ? 'completed' : 'pending',
-                description: result.revisedDescription,
-                reviewFeedback: {
-                  positive: result.positivePoints,
-                  negative: result.negativePoints,
-                  rating: result.rating,
-                },
-            });
+      if (task.type === "administration") {
+        submissionData = await selectedFile.text(); // Expecting pasted link
+      } else {
+        const reader = new FileReader();
+        reader.readAsDataURL(selectedFile);
+        await new Promise<void>((resolve, reject) => {
+          reader.onload = () => {
+            submissionData = reader.result as string;
+            resolve();
+          };
+          reader.onerror = reject;
+        });
+      }
 
-            toast({
-                title: "Review Complete",
-                description: result.decision === 'complete' 
-                    ? `Task "${task.title}" has been reviewed and marked as complete.`
-                    : `Task "${task.title}" has been reviewed and requires changes.`,
-            });
+      // Save uploaded input to task
+      updateTask(task.id, {
+        status: "review",
+        posterUrl: submissionData,
+      });
 
-        } catch (error) {
-            console.error("Failed to review poster:", error);
-            toast({
-                variant: "destructive",
-                title: "Review Failed",
-                description: "The AI review process failed. Please try again.",
-            });
-            // Revert status if review fails
-            updateTask(task.id, { status: 'pending' });
-        } finally {
-            setIsReviewing(false);
-            setSelectedFile(null);
-        }
-    };
-    reader.onerror = (error) => {
-        console.error("File reading error:", error);
-        toast({ variant: "destructive", title: "File Error", description: "Could not read the selected file." });
-        setIsReviewing(false);
-    };
+      // Unified review call
+   
+
+      const validTypes = ["design", "content", "media", "administration"];
+const rawType = task.type;
+const taskType = (rawType || "").toLowerCase();
+console.log("🟨 Task type:", task.type);
+
+if (!validTypes.includes(taskType)) {
+  
+  console.error("❌ Invalid task type:", rawType, taskType);
+  throw new Error(`Unsupported task type passed: ${rawType}`);
+}
+      
+      const result = await reviewTaskByType({
+        type: taskType as "design" | "content" | "media" | "administration",
+        fileDataUri: submissionData,
+        taskTitle: task.title,
+        taskDescription: task.description,
+      });
+
+      // Update task with feedback
+      updateTask(task.id, {
+        status: result.decision === "complete" ? "completed" : "pending",
+        description: result.revisedDescription,
+        reviewFeedback: {
+          positive: result.positivePoints,
+          negative: result.negativePoints,
+          rating: result.rating,
+        },
+      });
+
+      toast({
+        title: "Review Complete",
+        description:
+          result.decision === "complete"
+            ? `Task "${task.title}" has been marked complete.`
+            : `Task "${task.title}" needs more work.`,
+      });
+    } catch (error) {
+      console.error("Review error:", error);
+      toast({
+        variant: "destructive",
+        title: "Review Failed",
+        description:
+          "There was an issue submitting or reviewing the file/link.",
+      });
+      updateTask(task.id, { status: "pending" });
+    } finally {
+      setIsReviewing(false);
+      setSelectedFile(null);
+    }
   };
-
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Card className={cn("rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-l-4 cursor-pointer", config.color)}>
+        <Card
+          className={cn(
+            "rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-l-4 cursor-pointer",
+            config.color
+          )}
+        >
           <CardHeader>
             <div className="flex justify-between items-start">
-                <CardTitle className="text-xl font-headline mb-2">{task.title}</CardTitle>
-                <Badge variant={config.badgeVariant} className="capitalize flex items-center gap-1">
-                    <Icon className="h-3 w-3" />
-                    {config.label}
-                </Badge>
+              <CardTitle className="text-xl font-headline mb-2">
+                {task.title}
+              </CardTitle>
+              <Badge
+                variant={config.badgeVariant}
+                className="capitalize flex items-center gap-1"
+              >
+                <Icon className="h-3 w-3" />
+                {config.label}
+              </Badge>
             </div>
-            <CardDescription className="line-clamp-2">{task.description}</CardDescription>
+            <CardDescription className="line-clamp-2">
+              {task.description}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center">
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                <span>Due: {format(parseISO(task.dueDate), "PPP")}</span>
+              </div>
+              {task.assignee && (
                 <div className="flex items-center">
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  <span>Due: {format(parseISO(task.dueDate), "PPP")}</span>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>{task.assignee}</span>
                 </div>
-                {task.assignee && (
-                  <div className="flex items-center">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>{task.assignee}</span>
-                  </div>
-                )}
+              )}
             </div>
           </CardContent>
         </Card>
@@ -198,104 +260,152 @@ export function TaskCard({ task }: TaskCardProps) {
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <div className="flex items-center space-x-4">
-             <DialogTitle className="text-2xl font-headline">{task.title}</DialogTitle>
-             <Badge variant={config.badgeVariant} className="capitalize flex items-center gap-1 h-fit">
-                  <Icon className="h-3 w-3" />
-                  {config.label}
-              </Badge>
+            <DialogTitle className="text-2xl font-headline">
+              {task.title}
+            </DialogTitle>
+            <Badge
+              variant={config.badgeVariant}
+              className="capitalize flex items-center gap-1 h-fit"
+            >
+              <Icon className="h-3 w-3" />
+              {config.label}
+            </Badge>
           </div>
         </DialogHeader>
         <ScrollArea className="max-h-[60vh] -mx-6 px-6">
           <div className="space-y-4 py-4">
             <p className="text-muted-foreground">{task.description}</p>
-            
+
             {task.posterUrl && (
               <div className="mt-4">
-                  <h4 className="font-semibold mb-2">Submitted Poster:</h4>
-                  <div className="relative aspect-video w-full rounded-lg overflow-hidden border">
-                      <Image src={task.posterUrl} alt={`Poster for ${task.title}`} layout="fill" objectFit="contain" />
-                  </div>
+                <h4 className="font-semibold mb-2">Submitted Poster:</h4>
+                <div className="relative aspect-video w-full rounded-lg overflow-hidden border">
+                  <Image
+                    src={task.posterUrl}
+                    alt={`Poster for ${task.title}`}
+                    layout="fill"
+                    objectFit="contain"
+                  />
+                </div>
               </div>
             )}
 
             {task.reviewFeedback && (
               <div className="mt-4 space-y-4 rounded-lg border bg-muted/50 p-4">
-                  <h4 className="font-semibold text-lg">AI Review Feedback</h4>
-                  
-                  {task.reviewFeedback.rating !== undefined && (
-                      <div>
-                          <div className="flex items-center gap-2 text-primary">
-                              <Star className="h-5 w-5" />
-                              <h5 className="font-semibold">Overall Rating</h5>
-                          </div>
-                          <div className="mt-2 pl-7 flex items-center gap-4">
-                                <Progress value={task.reviewFeedback.rating * 10} className="w-1/2" />
-                                <span className="font-bold text-lg">{task.reviewFeedback.rating}/10</span>
-                          </div>
-                           <p className="mt-1 pl-7 text-sm text-muted-foreground">
-                            { task.reviewFeedback.rating >= 8 ? "This poster is looking great and is good to go!" : "This poster needs some improvements before it's ready." }
-                          </p>
-                      </div>
-                  )}
+                <h4 className="font-semibold text-lg">AI Review Feedback</h4>
 
+                {task.reviewFeedback.rating !== undefined && (
                   <div>
-                      <div className="flex items-center gap-2 text-green-600 dark:text-green-500">
-                          <ThumbsUp className="h-5 w-5" />
-                          <h5 className="font-semibold">What went well</h5>
-                      </div>
-                      <pre className="mt-2 whitespace-pre-wrap font-sans text-sm text-muted-foreground pl-7">{task.reviewFeedback.positive}</pre>
+                    <div className="flex items-center gap-2 text-primary">
+                      <Star className="h-5 w-5" />
+                      <h5 className="font-semibold">Overall Rating</h5>
+                    </div>
+                    <div className="mt-2 pl-7 flex items-center gap-4">
+                      <Progress
+                        value={task.reviewFeedback.rating * 10}
+                        className="w-1/2"
+                      />
+                      <span className="font-bold text-lg">
+                        {task.reviewFeedback.rating}/10
+                      </span>
+                    </div>
+                    <p className="mt-1 pl-7 text-sm text-muted-foreground">
+                      {task.reviewFeedback.rating >= 8
+                        ? "This poster is looking great and is good to go!"
+                        : "This poster needs some improvements before it's ready."}
+                    </p>
                   </div>
-                  <div>
-                      <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-500">
-                          <Lightbulb className="h-5 w-5" />
-                          <h5 className="font-semibold">What to improve</h5>
-                      </div>
-                      <pre className="mt-2 whitespace-pre-wrap font-sans text-sm text-muted-foreground pl-7">{task.reviewFeedback.negative}</pre>
+                )}
+
+                <div>
+                  <div className="flex items-center gap-2 text-green-600 dark:text-green-500">
+                    <ThumbsUp className="h-5 w-5" />
+                    <h5 className="font-semibold">What went well</h5>
                   </div>
+                  <pre className="mt-2 whitespace-pre-wrap font-sans text-sm text-muted-foreground pl-7">
+                    {task.reviewFeedback.positive}
+                  </pre>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-500">
+                    <Lightbulb className="h-5 w-5" />
+                    <h5 className="font-semibold">What to improve</h5>
+                  </div>
+                  <pre className="mt-2 whitespace-pre-wrap font-sans text-sm text-muted-foreground pl-7">
+                    {task.reviewFeedback.negative}
+                  </pre>
+                </div>
               </div>
             )}
 
             <div className="flex flex-col gap-2 text-sm pt-4 border-t">
+              <div className="flex items-center text-muted-foreground">
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                <span className="font-medium">Due Date:</span>&nbsp;
+                <span>{format(parseISO(task.dueDate), "PPP")}</span>
+              </div>
+              {task.assignee && (
                 <div className="flex items-center text-muted-foreground">
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  <span className="font-medium">Due Date:</span>&nbsp;
-                  <span>{format(parseISO(task.dueDate), "PPP")}</span>
+                  <User className="mr-2 h-4 w-4" />
+                  <span className="font-medium">Assigned to:</span>&nbsp;
+                  <span>{task.assignee}</span>
                 </div>
-                {task.assignee && (
-                  <div className="flex items-center text-muted-foreground">
-                    <User className="mr-2 h-4 w-4" />
-                    <span className="font-medium">Assigned to:</span>&nbsp;
-                    <span>{task.assignee}</span>
-                  </div>
-                )}
+              )}
             </div>
           </div>
         </ScrollArea>
         <div className="pt-4 mt-4 border-t flex flex-col gap-4">
-            {(task.status === 'pending' || task.status === 'overdue') && (
-                <div>
-                    <h4 className="font-semibold text-sm mb-2">{task.posterUrl ? "Submit a New Poster" : "Submit Poster for Review"}</h4>
-                    <div className="flex items-center gap-2">
-                        <Input type="file" accept="image/*" onChange={handleFileChange} className="flex-grow" />
-                        <Button onClick={handlePosterReview} disabled={isReviewing || !selectedFile}>
-                            {isReviewing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileUp className="mr-2 h-4 w-4" />}
-                            {isReviewing ? "Uploading..." : task.posterUrl ? "Resubmit" : "Upload"}
-                        </Button>
-                    </div>
+          {(task.status === "pending" || task.status === "overdue") && (
+            <div className="space-y-4">
+              <h4 className="font-semibold text-sm">
+                {task.type === "administration"
+                  ? "Provide Google Form Link"
+                  : `Submit ${task.type} File`}
+              </h4>
+
+              {task.type === "administration" ? (
+                <Input
+                  type="url"
+                  placeholder="https://forms.gle/..."
+                  value={selectedFile?.name || ""}
+                  onChange={(e) =>
+                    setSelectedFile(
+                      new File(
+                        [new Blob([e.target.value])],
+                        "google-form-link.txt"
+                      )
+                    )
+                  }
+                />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    accept={
+                      task.type === "content"
+                        ? "application/pdf"
+                        : task.type === "design"
+                        ? "image/*"
+                        : "video/*"
+                    }
+                    onChange={handleFileChange}
+                    className="flex-grow"
+                  />
+                  <Button
+                    onClick={handlePosterReview}
+                    disabled={isReviewing || !selectedFile}
+                  >
+                    {isReviewing ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <FileUp className="mr-2 h-4 w-4" />
+                    )}
+                    {isReviewing ? "Uploading..." : "Upload"}
+                  </Button>
                 </div>
-            )}
-            {(task.status === 'pending' || task.status === 'overdue') && task.assignee && (
-                <div className="flex justify-end">
-                    <Button onClick={handleSendReminder} disabled={isSendingReminder}>
-                        {isSendingReminder ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <Send className="mr-2 h-4 w-4" />
-                        )}
-                        {isSendingReminder ? "Sending..." : "Send Reminder to Assignee"}
-                    </Button>
-                </div>
-            )}
+              )}
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

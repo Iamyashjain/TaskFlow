@@ -43,6 +43,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                     assignee: data.assignee,
                     posterUrl: data.posterUrl,
                     reviewFeedback: data.reviewFeedback,
+                    type: data.type,
                 };
                 tasksData.push(task);
             });
