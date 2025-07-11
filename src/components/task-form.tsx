@@ -83,7 +83,7 @@ export function TaskForm() {
         ...values,
         dueDate: values.dueDate.toISOString(),
         description: values.description || "",
-        type: values.type, // ✅ This was missing
+        type: values.type.toLowerCase(), // Ensure type is lowercase
       };
 
       addTask(taskData);

@@ -44,6 +44,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                     posterUrl: data.posterUrl,
                     reviewFeedback: data.reviewFeedback,
                     type: data.type,
+                    // Add other fields as necessary
                 };
                 tasksData.push(task);
             });

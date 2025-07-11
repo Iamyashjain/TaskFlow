@@ -124,7 +124,7 @@ export async function reviewByType({
 }): Promise<ReviewOutput> {
   const input = { fileDataUri, taskTitle, taskDescription };
 
-switch (type.toLowerCase()) {
+  switch (type.toLowerCase()) {
   case 'design':
     return await reviewPoster(input);
   case 'content':
