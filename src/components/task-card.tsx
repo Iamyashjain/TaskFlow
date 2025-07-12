@@ -381,13 +381,6 @@ if (!validTypes.includes(taskType)) {
                 <div className="flex items-center gap-2">
                   <Input
                     type="file"
-                    accept={
-                      task.type === "content"
-                        ? "application/pdf"
-                        : task.type === "design"
-                        ? "image/*"
-                        : "video/*"
-                    }
                     onChange={handleFileChange}
                     className="flex-grow"
                   />
