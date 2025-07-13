@@ -136,7 +136,6 @@ export function TaskCard({ task }: TaskCardProps) {
       setSelectedFile(event.target.files[0]);
     }
   };
-
   const handlePosterReview = async () => {
     if (!selectedFile) {
       toast({
@@ -176,30 +175,30 @@ export function TaskCard({ task }: TaskCardProps) {
       });
 
       // Unified review call
-   
-
       const validTypes = ["design", "content", "media", "administration"];
-const rawType = task.type;
-const taskType = (rawType || "").toLowerCase();
-console.log("🟨 Task type:", task.type);
+      const rawType = task.type;
+      const taskType = (rawType || "").toLowerCase();
+      console.log("🟨 Task type:", task.type);
 
-if (!validTypes.includes(taskType)) {
-  
-  console.error("❌ Invalid task type:", rawType, taskType);
-  throw new Error(`Unsupported task type passed: ${rawType}`);
-}
-      
+      if (!validTypes.includes(taskType)) {
+        console.error("❌ Invalid task type:", rawType, taskType);
+        throw new Error(`Unsupported task type passed: ${rawType}`);
+      }
+
       const result = await reviewTaskByType({
         type: taskType as "design" | "content" | "media" | "administration",
         fileDataUri: submissionData,
         taskTitle: task.title,
         taskDescription: task.description,
       });
+      let fileType: Task["submissionFileType"] = "image"; // default
+
+      if (selectedFile.type.startsWith("video/")) fileType = "video";
+      else if (selectedFile.type === "application/pdf") fileType = "pdf";
 
       // Update task with feedback
       updateTask(task.id, {
- status: result.decision === "aiApproved" ? "aiApproved" : "pending",
-        description: result.revisedDescription,
+        status: result.decision === "aiApproved" ? "aiApproved" : "pending",
         reviewFeedback: {
           positive: result.positivePoints,
           negative: result.negativePoints,
@@ -214,8 +213,10 @@ if (!validTypes.includes(taskType)) {
             ? `Task "${task.title}" has been AI Approved.`
             : `Task "${task.title}" needs more work.`,
       });
+
       if (result.decision === "aiApproved") {
-        const leadEmail = verticalLeads[task.type as keyof typeof verticalLeads];
+        const leadEmail =
+          verticalLeads[task.type as keyof typeof verticalLeads];
         if (leadEmail) {
           try {
             await sendReminder({
@@ -225,6 +226,7 @@ if (!validTypes.includes(taskType)) {
               assignee: leadEmail,
               reminderType: "aiApprovedNotification",
             });
+
             toast({
               title: "Lead Notified",
               description: `The lead for ${task.type} has been notified of the AI approved task.`,
@@ -238,6 +240,7 @@ if (!validTypes.includes(taskType)) {
             });
           }
         }
+      }
     } catch (error) {
       console.error("Review error:", error);
       toast({
@@ -252,6 +255,7 @@ if (!validTypes.includes(taskType)) {
       setSelectedFile(null);
     }
   };
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -313,17 +317,45 @@ if (!validTypes.includes(taskType)) {
           <div className="space-y-4 py-4">
             <p className="text-muted-foreground">{task.description}</p>
 
-            {task.posterUrl && (
+            {task.submissionUrl && (
               <div className="mt-4">
-                <h4 className="font-semibold mb-2">Submitted Poster:</h4>
-                <div className="relative aspect-video w-full rounded-lg overflow-hidden border">
-                  <Image
-                    src={task.posterUrl}
-                    alt={`Poster for ${task.title}`}
-                    layout="fill"
-                    objectFit="contain"
+                <h4 className="font-semibold mb-2">Submitted File:</h4>
+
+                {task.submissionFileType === "image" ? (
+                  <div className="relative aspect-video w-full rounded-lg overflow-hidden border">
+                    <Image
+                      src={task.submissionUrl}
+                      alt={`Submission for ${task.title}`}
+                      layout="fill"
+                      objectFit="contain"
+                    />
+                  </div>
+                ) : task.submissionFileType === "video" ? (
+                  <video
+                    controls
+                    src={task.submissionUrl}
+                    className="w-full rounded-lg border"
                   />
-                </div>
+                ) : task.submissionFileType === "pdf" ? (
+                  <iframe
+                    src={task.submissionUrl}
+                    className="w-full h-[500px] border rounded-lg"
+                    title={`PDF Submission for ${task.title}`}
+                  />
+                ) : task.submissionFileType === "form" ? (
+                  <a
+                    href={task.submissionUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline"
+                  >
+                    Open Submitted Google Form
+                  </a>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Unsupported file type
+                  </p>
+                )}
               </div>
             )}
 
