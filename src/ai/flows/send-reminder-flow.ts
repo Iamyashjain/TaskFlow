@@ -16,7 +16,7 @@ const SendReminderInputSchema = z.object({
   description: z.string().optional().describe('Task details'),
   dueDate: z.string().describe('Due date (ISO format)'),
   assignee: z.string().describe('Assignee email'),
-  reminderType: z.enum(['assignment', 'pending']).describe('Reminder type'),
+  reminderType: z.enum(['assignment', 'pending', 'aiApprovedNotification']).describe('Reminder type'),
 });
 
 export type SendReminderInput = z.infer<typeof SendReminderInputSchema>;

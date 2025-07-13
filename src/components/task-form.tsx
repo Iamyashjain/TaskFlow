@@ -41,10 +41,10 @@ import { sendReminder } from "@/ai/flows/send-reminder-flow"; // ✅ safe import
 import { useTasks } from "@/context/task-context";
 
 const verticalLeads = {
-  Content: "rudrajabalpur1112@gmail.com", // Replace with actual lead emails
-  Design: "rudrajabalpur1112@gmail.com", // Replace with actual lead emails
-  Administration: "rudrajabalpur1112@gmail.com", // Replace with actual lead emails
-  Media: "rudrajabalpur1112@gmail.com", // Replace with actual lead emails
+  content: "rudrajabalpur1112@gmail.com", // Replace with actual lead emails
+  design: "rudrajabalpur1112@gmail.com", // Replace with actual lead emails
+  administration: "rudrajabalpur1112@gmail.com", // Replace with actual lead emails
+  media: "rudrajabalpur1112@gmail.com", // Replace with actual lead emails
 };
 
 const formSchema = z.object({
@@ -93,10 +93,11 @@ export function TaskForm() {
         type: values.type.toLowerCase(), // Ensure type is lowercase
       };
 
-      addTask(taskData);
+      // addTask(taskData);
 
       if (values.assignee) {
-        const leadEmail = verticalLeads[values.type];
+        const typeKey = values.type.toLowerCase(); // Ensure consistent key matching
+        const leadEmail = verticalLeads[typeKey];
 
         // Send reminder to assignee
         const assigneeResult = await sendReminder({
@@ -113,7 +114,7 @@ export function TaskForm() {
           description: values.description,
           dueDate: values.dueDate.toISOString(),
           assignee: leadEmail, // Send to the lead
-          reminderType: "new-task-assigned", // You might want a different reminder type here
+          reminderType: "assignment", // You might want a different reminder type here
         });
 
         if (assigneeResult.success && leadResult.success) {
@@ -123,7 +124,11 @@ export function TaskForm() {
           });
         } else {
           // Handle cases where one or both reminders failed
-          throw new Error(assigneeResult.message || leadResult.message || "Failed to send one or more reminders.");
+          throw new Error(
+            assigneeResult.message ||
+              leadResult.message ||
+              "Failed to send one or more reminders."
+          );
         }
       } else {
         toast({

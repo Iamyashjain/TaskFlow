@@ -167,11 +167,17 @@ export function TaskCard({ task }: TaskCardProps) {
           reader.onerror = reject;
         });
       }
+      let fileType: Task["submissionFileType"] = "image"; // default
+
+      if (selectedFile.type.startsWith("video/")) fileType = "video";
+      else if (selectedFile.type === "application/pdf") fileType = "pdf";
 
       // Save uploaded input to task
       updateTask(task.id, {
         status: "review",
-        posterUrl: submissionData,
+        submissionUrl: submissionData,
+        submissionFileType: fileType,
+        posterUrl: fileType === "image" ? submissionData : undefined, // optional fallback
       });
 
       // Unified review call
@@ -191,10 +197,6 @@ export function TaskCard({ task }: TaskCardProps) {
         taskTitle: task.title,
         taskDescription: task.description,
       });
-      let fileType: Task["submissionFileType"] = "image"; // default
-
-      if (selectedFile.type.startsWith("video/")) fileType = "video";
-      else if (selectedFile.type === "application/pdf") fileType = "pdf";
 
       // Update task with feedback
       updateTask(task.id, {
@@ -224,7 +226,7 @@ export function TaskCard({ task }: TaskCardProps) {
               description: task.description,
               dueDate: task.dueDate,
               assignee: leadEmail,
-              reminderType: "aiApprovedNotification",
+              reminderType: "assignment",
             });
 
             toast({
