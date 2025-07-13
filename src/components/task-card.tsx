@@ -426,7 +426,7 @@ export function TaskCard({ task }: TaskCardProps) {
           </div>
         </ScrollArea>
         <div className="pt-4 mt-4 border-t flex flex-col gap-4">
-          {(task.status === "pending" || task.status === "overdue") && (
+          {["pending", "overdue", "review", "aiApproved"].includes(task.status) && (
             <div className="space-y-4">
               <h4 className="font-semibold text-sm">
                 {task.type === "administration"
