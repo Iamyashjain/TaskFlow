@@ -2,7 +2,7 @@ export interface Task {
   id: string;
   title: string;
   description: string;
-  status: 'pending' | 'completed' | 'overdue' | 'review';
+  status: 'pending' | 'completed' | 'overdue' | 'review' | 'aiApproved'; // <-- Added here
   dueDate: string;
   assignee?: string;
 

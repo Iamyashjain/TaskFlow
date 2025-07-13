@@ -1,0 +1,12 @@
+[
+  {
+    "origin": [
+      "http://localhost:9002",
+      "https://your-app.onrender.com",
+      "https://yourdomain.com"
+    ],
+    "method": ["GET", "POST", "PUT", "DELETE"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": ["Content-Type", "Authorization"]
+  }
+]

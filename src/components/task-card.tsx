@@ -2,6 +2,9 @@
 
 import * as React from "react";
 import Image from "next/image";
+import { deleteField } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
 import {
   Card,
   CardContent,
@@ -152,32 +155,34 @@ export function TaskCard({ task }: TaskCardProps) {
     setIsReviewing(true);
 
     try {
-      let submissionData = "";
-
-      if (task.type === "administration") {
-        submissionData = await selectedFile.text(); // Expecting pasted link
-      } else {
-        const reader = new FileReader();
-        reader.readAsDataURL(selectedFile);
-        await new Promise<void>((resolve, reject) => {
-          reader.onload = () => {
-            submissionData = reader.result as string;
-            resolve();
-          };
-          reader.onerror = reject;
-        });
-      }
       let fileType: Task["submissionFileType"] = "image"; // default
 
-      if (selectedFile.type.startsWith("video/")) fileType = "video";
-      else if (selectedFile.type === "application/pdf") fileType = "pdf";
+      if (selectedFile.type.startsWith("video/")) {
+        fileType = "video";
+      } else if (selectedFile.type === "application/pdf") {
+        fileType = "pdf";
+      } else if (task.type === "administration") {
+        fileType = "form";
+      }
 
+      // Read file content based on type
+      const submissionData: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(selectedFile);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+      });
       // Save uploaded input to task
       updateTask(task.id, {
         status: "review",
         submissionUrl: submissionData,
         submissionFileType: fileType,
-        posterUrl: fileType === "image" ? submissionData : undefined, // optional fallback
+        // posterUrl: fileType === "image" ? submissionUrl : deleteField(), // optional fallback
+      });
+
+      console.log("✅ Updated task with submission:", {
+        submissionUrl: submissionData,
+        fileType,
       });
 
       // Unified review call
@@ -272,6 +277,7 @@ export function TaskCard({ task }: TaskCardProps) {
               <CardTitle className="text-xl font-headline mb-2">
                 {task.title}
               </CardTitle>
+                
               <Badge
                 variant={config.badgeVariant}
                 className="capitalize flex items-center gap-1"
@@ -281,6 +287,7 @@ export function TaskCard({ task }: TaskCardProps) {
               </Badge>
             </div>
             <CardDescription className="line-clamp-2">
+              <h2 className="p-2 text-gray-200 font-md"><strong>Vertical:- </strong>{task.type}</h2>
               {task.description}
             </CardDescription>
           </CardHeader>
@@ -295,6 +302,54 @@ export function TaskCard({ task }: TaskCardProps) {
                   <User className="mr-2 h-4 w-4" />
                   <span>{task.assignee}</span>
                 </div>
+              )}
+              {task.submissionUrl && (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="mt-4 w-fit">
+                      View Submission
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-2xl">
+                    <h4 className="font-semibold mb-2">Submitted File:</h4>
+
+                    {task.submissionFileType === "image" ? (
+                      <div className="relative aspect-video w-full rounded-lg overflow-hidden border">
+                        <Image
+                          src={task.submissionUrl}
+                          alt={`Submission for ${task.title}`}
+                          layout="fill"
+                          objectFit="contain"
+                        />
+                      </div>
+                    ) : task.submissionFileType === "video" ? (
+                      <video
+                        controls
+                        src={task.submissionUrl}
+                        className="w-full rounded-lg border"
+                      />
+                    ) : task.submissionFileType === "pdf" ? (
+                      <iframe
+                        src={task.submissionUrl}
+                        className="w-full h-[500px] border rounded-lg"
+                        title="PDF Submission"
+                      />
+                    ) : task.submissionFileType === "form" ? (
+                      <a
+                        href={task.submissionUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 underline"
+                      >
+                        Open Submitted Google Form
+                      </a>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Unsupported file type
+                      </p>
+                    )}
+                  </DialogContent>
+                </Dialog>
               )}
             </div>
           </CardContent>
@@ -426,7 +481,9 @@ export function TaskCard({ task }: TaskCardProps) {
           </div>
         </ScrollArea>
         <div className="pt-4 mt-4 border-t flex flex-col gap-4">
-          {["pending", "overdue", "review", "aiApproved"].includes(task.status) && (
+          {["pending", "overdue", "review", "aiApproved"].includes(
+            task.status
+          ) && (
             <div className="space-y-4">
               <h4 className="font-semibold text-sm">
                 {task.type === "administration"
