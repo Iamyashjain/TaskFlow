@@ -44,6 +44,13 @@ import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
 import { Progress } from "./ui/progress";
 
+const verticalLeads = {
+  content: "rudrajabalpur1112@gmail.com",
+  design: "rudrajabalpur1112@gmail.com",
+  administration: "rudrajabalpur1112@gmail.com",
+  media: "rudrajabalpur1112@gmail.com",
+};
+
 interface TaskCardProps {
   task: Task;
 }
@@ -71,6 +78,12 @@ const statusConfig = {
     label: "In Review",
     icon: Eye,
     color: "border-yellow-500",
+    badgeVariant: "outline" as const,
+  },
+  aiApproved: {
+    label: "AI Approved",
+    icon: ThumbsUp,
+    color: "border-blue-500", // Or another color indicating pending lead review
     badgeVariant: "outline" as const,
   },
 };
@@ -185,7 +198,7 @@ if (!validTypes.includes(taskType)) {
 
       // Update task with feedback
       updateTask(task.id, {
-        status: result.decision === "complete" ? "completed" : "pending",
+ status: result.decision === "aiApproved" ? "aiApproved" : "pending",
         description: result.revisedDescription,
         reviewFeedback: {
           positive: result.positivePoints,
@@ -197,10 +210,34 @@ if (!validTypes.includes(taskType)) {
       toast({
         title: "Review Complete",
         description:
-          result.decision === "complete"
-            ? `Task "${task.title}" has been marked complete.`
+          result.decision === "aiApproved"
+            ? `Task "${task.title}" has been AI Approved.`
             : `Task "${task.title}" needs more work.`,
       });
+      if (result.decision === "aiApproved") {
+        const leadEmail = verticalLeads[task.type as keyof typeof verticalLeads];
+        if (leadEmail) {
+          try {
+            await sendReminder({
+              title: task.title,
+              description: task.description,
+              dueDate: task.dueDate,
+              assignee: leadEmail,
+              reminderType: "aiApprovedNotification",
+            });
+            toast({
+              title: "Lead Notified",
+              description: `The lead for ${task.type} has been notified of the AI approved task.`,
+            });
+          } catch (sendError) {
+            console.error("Failed to send lead notification:", sendError);
+            toast({
+              variant: "destructive",
+              title: "Lead Notification Failed",
+              description: `Could not notify the lead for ${task.type}.`,
+            });
+          }
+        }
     } catch (error) {
       console.error("Review error:", error);
       toast({

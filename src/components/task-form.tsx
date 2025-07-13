@@ -40,6 +40,13 @@ import { sendReminder } from "@/ai/flows/send-reminder-flow"; // ✅ safe import
 
 import { useTasks } from "@/context/task-context";
 
+const verticalLeads = {
+  Content: "rudrajabalpur1112@gmail.com", // Replace with actual lead emails
+  Design: "rudrajabalpur1112@gmail.com", // Replace with actual lead emails
+  Administration: "rudrajabalpur1112@gmail.com", // Replace with actual lead emails
+  Media: "rudrajabalpur1112@gmail.com", // Replace with actual lead emails
+};
+
 const formSchema = z.object({
   title: z.string().min(2, {
     message: "Title must be at least 2 characters.",
@@ -89,20 +96,34 @@ export function TaskForm() {
       addTask(taskData);
 
       if (values.assignee) {
-        const result = await sendReminder({
+        const leadEmail = verticalLeads[values.type];
+
+        // Send reminder to assignee
+        const assigneeResult = await sendReminder({
           title: values.title,
           description: values.description,
           dueDate: values.dueDate.toISOString(),
           assignee: values.assignee,
           reminderType: "assignment",
         });
-        if (result.success) {
+
+        // Send reminder to vertical lead
+        const leadResult = await sendReminder({
+          title: values.title,
+          description: values.description,
+          dueDate: values.dueDate.toISOString(),
+          assignee: leadEmail, // Send to the lead
+          reminderType: "new-task-assigned", // You might want a different reminder type here
+        });
+
+        if (assigneeResult.success && leadResult.success) {
           toast({
-            title: "Task Created & Assignee Notified",
-            description: `An assignment notification for "${values.title}" was sent to ${values.assignee}.`,
+            title: "Task Created & Notifications Sent",
+            description: `Assignment notifications for "${values.title}" were sent to ${values.assignee} and the ${values.type} vertical lead (${leadEmail}).`,
           });
         } else {
-          throw new Error(result.message);
+          // Handle cases where one or both reminders failed
+          throw new Error(assigneeResult.message || leadResult.message || "Failed to send one or more reminders.");
         }
       } else {
         toast({
