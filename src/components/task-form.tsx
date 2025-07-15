@@ -93,7 +93,7 @@ export function TaskForm() {
         type: values.type.toLowerCase(), // Ensure type is lowercase
       };
 
-      // addTask(taskData);
+      addTask(taskData);
 
       if (values.assignee) {
         const typeKey = values.type.toLowerCase(); // Ensure consistent key matching

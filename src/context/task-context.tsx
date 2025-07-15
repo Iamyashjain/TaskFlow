@@ -42,6 +42,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
                     dueDate: data.dueDate,
                     assignee: data.assignee,
                     posterUrl: data.posterUrl,
+                    submissionFileType : data.submissionFileType,
+                    submissionUrl: data.submissionUrl,
                     reviewFeedback: data.reviewFeedback,
                     type: data.type,
                     // Add other fields as necessary

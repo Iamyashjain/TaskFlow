@@ -92,6 +92,7 @@ const statusConfig = {
 };
 
 export function TaskCard({ task }: TaskCardProps) {
+  console.log("📦 Task Object:", task);
   const config = statusConfig[task.status];
   const Icon = config.icon;
   const { toast } = useToast();
