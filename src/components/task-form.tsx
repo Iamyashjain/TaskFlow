@@ -205,7 +205,8 @@ export function TaskForm() {
                     defaultValue={field.value}
                   >
                     <FormControl>
-                      <SelectTrigger className="bg-white border border-gray-300 shadow-sm hover:border-gray-400">
+                      <SelectTrigger className="bg-gray
+                       border border-gray-300 shadow-sm hover:border-gray-400">
                         <SelectValue placeholder="Select task type" />
                       </SelectTrigger>
                     </FormControl>
